@@ -203,6 +203,169 @@ Preview any file in your project with `Cmd+P` search.
 - `Cmd+W` - Close current file
 - `Cmd+[` / `Cmd+]` - Navigate back/forward
 
+## Integrated Terminal
+
+Access a full terminal directly within 1Code, without switching to an external terminal app.
+
+### Features
+
+- **Multiple terminals:** Create multiple terminal sessions per workspace
+- **Split view:** Terminal in sidebar or bottom panel
+- **Keyboard shortcut:** Toggle with `Cmd+J`
+- **Shared across worktrees:** Terminal sessions persist across local-mode workspaces
+- **Session restoration:** Terminal state is saved and restored on app restart
+
+### Terminal Modes
+
+**Sidebar terminal:**
+- Opens on the right side of the window
+- Compact view for quick commands
+- Doesn't obstruct the main editor
+
+**Bottom panel terminal:**
+- Opens at the bottom of the window
+- Full-width for better visibility
+- Resizable height
+
+Terminal sessions run in the current worktree directory, making it easy to run project-specific commands.
+
+## Kanban Board
+
+Visualize all your agent sessions in a kanban-style board view.
+
+### Board Columns
+
+- **Active:** Chats with running agents
+- **Waiting:** Queued messages or paused sessions
+- **Completed:** Finished agent tasks
+- **Archived:** Archived chats
+
+### Features
+
+- **Drag and drop:** Move chats between columns
+- **Quick actions:** Archive, delete, or reopen from card menu
+- **Status indicators:** See agent status, worktree, and recent activity
+- **Filters:** Filter by project, agent type, or date
+
+Access the kanban view from the sidebar navigation or with `Cmd+K`.
+
+## Chat Forking
+
+Create a sub-chat from any assistant message to explore alternative approaches.
+
+### How It Works
+
+1. **Hover over any assistant message**
+2. **Click the "Fork" icon**
+3. **New sub-chat opens** with conversation history up to that point
+4. **Make changes** and see different outcomes
+5. **Compare results** between the main chat and forked versions
+
+### Use Cases
+
+**Explore alternatives:**
+- Fork after a design decision to try different approaches
+- Test multiple implementation strategies
+- Compare different agent models on the same task
+
+**Rollback and retry:**
+- Fork before a large change
+- If the main chat goes wrong, continue from the fork
+- Merge successful changes back to main
+
+Forked chats appear in the sidebar with a branch icon and are linked to their parent chat.
+
+## Message Queue
+
+Queue up prompts while an agent is working, so you don't have to wait.
+
+### How It Works
+
+- Type a message while the agent is running
+- Message is added to the queue
+- When the agent finishes, queued messages are sent automatically
+- Edit or remove queued messages before they're sent
+
+### Queue UI
+
+**Queue indicator:**
+- Badge shows number of queued messages
+- Click to view and manage queue
+
+**Queue management:**
+- Reorder messages via drag and drop
+- Edit message content
+- Remove messages from queue
+- Clear entire queue
+
+This is especially useful for long-running tasks where you think of follow-up questions during execution.
+
+## Extended Thinking
+
+Visual representation of the agent's reasoning process before it acts.
+
+### What Is Extended Thinking?
+
+Extended thinking (also called "chain of thought") shows the agent's internal reasoning:
+- Problem analysis
+- Solution brainstorming
+- Step-by-step planning
+- Trade-off considerations
+
+### Visual Representation
+
+**Thinking gradient:**
+- Purple gradient background indicates thinking mode
+- Animated shimmer effect while thinking
+- Thinking text is collapsible for readability
+
+**Thinking duration:**
+- Displayed in the message header
+- Longer thinking time for complex problems
+- Can be enabled/disabled per model
+
+Extended thinking is enabled by default for Claude Sonnet and other supported models. It significantly improves output quality for complex tasks.
+
+## Memory Support
+
+1Code supports project-level memory through special markdown files that agents can read.
+
+### CLAUDE.md
+
+Project-specific instructions for Claude Code:
+- Coding style preferences
+- Architecture decisions
+- Tech stack details
+- Build/deployment commands
+
+Place `CLAUDE.md` in your project root. Claude will read it at the start of each session.
+
+**Example CLAUDE.md:**
+```markdown
+# Project Instructions
+
+This is a React + TypeScript project using Vite.
+
+## Code Style
+- Use functional components with hooks
+- Prefer named exports over default exports
+- Use Tailwind CSS for styling
+
+## Testing
+Run tests with: `npm test`
+```
+
+### AGENTS.md
+
+Generic instructions for all AI agents (Claude and Codex):
+- General project information
+- Contribution guidelines
+- Common tasks and workflows
+
+If both `CLAUDE.md` and `AGENTS.md` exist, agents read both (with CLAUDE.md taking precedence for Claude-specific settings).
+
+**Location:** Place these files in the root of your git repository.
+
 ## Best Practices
 
 <Card title="Review Before Committing" icon="eye">
