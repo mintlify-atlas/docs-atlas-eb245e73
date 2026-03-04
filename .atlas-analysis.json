@@ -1,0 +1,128 @@
+{
+  "projectType": "saas",
+  "projectName": "1Code",
+  "projectDescription": "Orchestration layer and UI for AI coding agents like Claude Code and Codex",
+  "theme": "palm",
+  "primaryColor": "#6366f1",
+  "lightColor": "#818cf8",
+  "darkColor": "#4338ca",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/multi-agent-support",
+              "features/visual-ui",
+              "features/worktree-isolation",
+              "features/background-agents",
+              "features/plan-mode",
+              "features/mcp-integration"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/creating-your-first-chat",
+              "guides/working-with-worktrees",
+              "guides/using-background-agents",
+              "guides/setting-up-mcp-servers",
+              "guides/automations",
+              "guides/git-integration"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/custom-models",
+              "advanced/skills-and-commands",
+              "advanced/voice-input",
+              "advanced/configuration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "API",
+            "pages": [
+              "api/overview",
+              "api/authentication",
+              "api/tasks",
+              "api/webhooks"
+            ]
+          },
+          {
+            "group": "Desktop API",
+            "pages": [
+              "api/desktop/overview",
+              "api/desktop/projects",
+              "api/desktop/chats",
+              "api/desktop/agents"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Resources",
+        "groups": [
+          {
+            "group": "Help",
+            "pages": [
+              "resources/troubleshooting",
+              "resources/faq",
+              "resources/changelog"
+            ]
+          },
+          {
+            "group": "Community",
+            "pages": [
+              "resources/contributing",
+              "resources/support"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-agent support (Claude Code, Codex)",
+    "Visual UI with diff previews and real-time tool execution",
+    "Git worktree isolation for each chat session",
+    "Background agents that run in cloud sandboxes",
+    "Plan mode with structured planning before execution",
+    "MCP integration and plugin marketplace",
+    "Automations triggered from GitHub, Linear, or Slack",
+    "Built-in git client and terminal",
+    "API for programmatic agent execution",
+    "Voice input and extended thinking mode"
+  ],
+  "publicApiSurface": [
+    "POST /api/v1/tasks - Create and run agent task",
+    "GET /api/v1/tasks/:id - Get task status",
+    "POST /api/v1/tasks/:id/messages - Send follow-up message",
+    "projects.create - Create new project",
+    "projects.list - List all projects",
+    "chats.create - Create new chat session",
+    "chats.list - List chat sessions",
+    "claude.startSession - Start Claude agent session",
+    "claude.sendMessage - Send message to agent",
+    "codex.startSession - Start Codex agent session",
+    "worktreeConfig.get - Get worktree configuration",
+    "terminal.create - Create terminal session",
+    "files.read - Read file contents",
+    "changes.status - Get git status"
+  ]
+}
