@@ -1,0 +1,348 @@
+---
+title: "Working with Worktrees"
+description: "Understanding and managing git worktrees for isolated development environments"
+---
+
+## What are Worktrees?
+
+Git worktrees let you check out multiple branches simultaneously in separate directories. In 1Code, each chat session can run in its own worktree, giving you:
+
+- **Isolation**: Multiple agents work in parallel without conflicts
+- **Safety**: Your main branch stays clean and untouched
+- **Speed**: No need to stash or commit WIP when switching contexts
+- **Convenience**: Compare branches side-by-side in your editor
+
+## How 1Code Uses Worktrees
+
+When you create a chat in Worktree mode:
+
+<Steps>
+  <Step title="Worktree creation">
+    1Code creates a new worktree directory at:
+    ```
+    ~/.21st/worktrees/<project-slug>/<unique-id>/
+    ```
+    
+    Each worktree gets:
+    - A unique branch name (e.g., `clever-fox-a1b2c3`)
+    - Its own working directory
+    - Shared git history with your main repo
+  </Step>
+
+  <Step title="Branch initialization">
+    The new branch starts from your chosen base branch (usually `main` or `master`).
+    
+    Behind the scenes:
+    ```bash
+    git worktree add /path/to/worktree -b clever-fox-a1b2c3 origin/main
+    ```
+  </Step>
+
+  <Step title="Automatic setup">
+    1Code runs common setup commands in the background:
+    - `npm install` or `yarn install` for Node.js projects
+    - `pip install -r requirements.txt` for Python projects
+    - Project-specific commands from `.1code/setup.sh` if present
+    
+    <Info>Setup runs asynchronously - you can start chatting immediately while dependencies install.</Info>
+  </Step>
+
+  <Step title="Agent workspace">
+    The agent works exclusively in the worktree directory:
+    - All file changes happen there
+    - Terminal commands run from the worktree root
+    - Git operations affect only the worktree branch
+  </Step>
+</Steps>
+
+## Managing Your Worktrees
+
+### Viewing Active Worktrees
+
+All active worktrees appear in the chat sidebar. Each chat card shows:
+- **Branch name**: The auto-generated or custom branch name
+- **Base branch**: Which branch the worktree is based on
+- **Status indicators**: Uncommitted changes, unpushed commits, or PR status
+
+### Switching Between Worktrees
+
+You can work with multiple worktrees simultaneously:
+
+1. **In 1Code**: Click any chat in the sidebar to switch to that worktree
+2. **In your editor**: Open the worktree directory directly:
+   ```bash
+   code ~/.21st/worktrees/<project>/<id>/
+   ```
+3. **In terminal**: Navigate to the worktree path shown in chat details
+
+<Tip>
+Use `Cmd+K` to quickly switch between active chats and their worktrees.
+</Tip>
+
+### Comparing Worktrees
+
+To see differences between worktrees:
+
+1. Open both worktree directories in your editor
+2. Use your editor's compare feature (e.g., VS Code's "Compare Folders")
+3. Or use git commands:
+   ```bash
+   git diff branch-1 branch-2
+   ```
+
+## Worktree Lifecycle
+
+### Starting Work
+
+When you create a new chat:
+- Worktree is created immediately
+- Branch is pushed to remote with `-u` flag
+- You can start sending prompts right away
+
+### During Development
+
+As the agent works:
+- Changes are made in the worktree directory
+- Commits are created automatically or via git panel
+- Pushes keep the remote branch in sync
+
+### Finishing Work
+
+When you're done with a worktree:
+
+<Tabs>
+  <Tab title="Merge to Main">
+    From the chat's git panel:
+    1. Click **Create PR** to open a pull request
+    2. Review the changes on GitHub
+    3. Merge the PR when ready
+    4. Delete the chat to clean up the worktree
+  </Tab>
+  
+  <Tab title="Abandon Changes">
+    If you want to discard the work:
+    1. Click the three-dot menu on the chat card
+    2. Select **Delete Chat**
+    3. Choose **Delete worktree and branch**
+    4. Confirm the deletion
+  </Tab>
+  
+  <Tab title="Keep for Later">
+    To pause work and come back later:
+    1. Make sure changes are committed
+    2. Push to remote for backup
+    3. Leave the chat active - it uses minimal resources
+    4. Return anytime by clicking the chat card
+  </Tab>
+</Tabs>
+
+## Advanced Worktree Usage
+
+### Custom Setup Commands
+
+Create a `.1code/setup.sh` script in your repository root:
+
+```bash .1code/setup.sh
+#!/bin/bash
+set -e
+
+echo "Installing dependencies..."
+npm install
+
+echo "Setting up environment..."
+cp .env.example .env
+
+echo "Building project..."
+npm run build
+
+echo "Setup complete!"
+```
+
+1Code runs this script in every new worktree automatically.
+
+### Shared Files Between Worktrees
+
+Some files are shared across all worktrees:
+- `.git/` directory (git objects, refs, config)
+- Git LFS objects (if LFS is enabled)
+- Git hooks
+
+Each worktree has its own:
+- Working directory files
+- `.git/index` (staging area)
+- Untracked files
+- Build artifacts
+
+### Manual Worktree Commands
+
+You can also manage worktrees using git directly:
+
+```bash
+# List all worktrees
+git worktree list
+
+# Add a new worktree manually
+git worktree add ../my-feature -b my-feature origin/main
+
+# Remove a worktree
+git worktree remove ../my-feature
+
+# Clean up deleted worktree references
+git worktree prune
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="One Task per Worktree" icon="bullseye">
+    Keep each worktree focused on a single feature or bug fix. This makes reviews easier and reduces conflicts.
+  </Card>
+  
+  <Card title="Commit Frequently" icon="code-commit">
+    Make small, frequent commits rather than large, infrequent ones. This makes it easier to roll back if needed.
+  </Card>
+  
+  <Card title="Push Regularly" icon="cloud-arrow-up">
+    Push to remote often to back up your work and enable collaboration.
+  </Card>
+  
+  <Card title="Clean Up Old Worktrees" icon="trash">
+    Delete worktrees when you're done to free up disk space and keep your workspace organized.
+  </Card>
+</CardGroup>
+
+### Naming Conventions
+
+1Code generates branch names like `clever-fox-a1b2c3`, but you can rename them:
+
+1. Click the branch name in the git panel
+2. Enter a descriptive name like `feature/user-auth`
+3. The branch is renamed locally and on remote
+
+**Good branch names:**
+- `feature/add-payment-processing`
+- `fix/memory-leak-in-cache`
+- `refactor/simplify-auth-flow`
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Worktree creation failed - repository locked">
+    **Cause**: Another git operation is in progress or crashed.
+    
+    **Solution**:
+    1. Wait for any running git operations to complete
+    2. If stuck, manually remove lock files:
+       ```bash
+       rm .git/index.lock
+       rm .git/config.lock
+       rm .git/worktrees/*/index.lock
+       ```
+    3. Retry worktree creation
+  </Accordion>
+  
+  <Accordion title="Git LFS errors in worktrees">
+    **Cause**: Repository uses Git LFS but `git-lfs` is not installed.
+    
+    **Solution**:
+    ```bash
+    # macOS
+    brew install git-lfs
+    git lfs install
+    
+    # Ubuntu/Debian
+    sudo apt-get install git-lfs
+    git lfs install
+    
+    # Windows (via Chocolatey)
+    choco install git-lfs
+    git lfs install
+    ```
+    Then recreate the worktree.
+  </Accordion>
+  
+  <Accordion title="Cannot switch branches - uncommitted changes">
+    **Cause**: You have uncommitted changes in the worktree.
+    
+    **Solution**:
+    1. Commit your changes via the git panel
+    2. Or stash them: `git stash push -m "WIP"`
+    3. Then switch branches
+    4. Later: `git stash pop` to restore changes
+  </Accordion>
+  
+  <Accordion title="Worktree still exists after deleting chat">
+    **Cause**: Chat deletion doesn't always remove the worktree directory immediately.
+    
+    **Solution**:
+    ```bash
+    # List all worktrees
+    git worktree list
+    
+    # Remove specific worktree
+    git worktree remove /path/to/worktree --force
+    
+    # Clean up stale entries
+    git worktree prune
+    ```
+  </Accordion>
+  
+  <Accordion title="Disk space filling up with worktrees">
+    **Cause**: Multiple worktrees with large node_modules or build artifacts.
+    
+    **Solution**:
+    1. Delete unused chats from the sidebar
+    2. Manually clean up old worktrees:
+       ```bash
+       # Find worktrees
+       ls ~/.21st/worktrees/<project>/
+       
+       # Remove entire project's worktrees
+       rm -rf ~/.21st/worktrees/<project>/
+       
+       # Clean up git references
+       git worktree prune
+       ```
+    3. Add cleanup script to project:
+       ```bash
+       # .1code/cleanup.sh
+       rm -rf node_modules dist build .next
+       ```
+  </Accordion>
+</AccordionGroup>
+
+## Worktree vs Branch vs Local Mode
+
+| Feature | Worktree | Branch | Local |
+|---------|----------|--------|-------|
+| **Isolation** | Separate directory | Same directory | Same directory |
+| **Main branch safety** | ✅ Protected | ⚠️ Depends on workflow | ❌ Unprotected |
+| **Multiple agents** | ✅ Yes | ❌ No | ❌ No |
+| **Disk usage** | Higher (separate copies) | Lower (shared directory) | Lowest |
+| **Setup time** | Moderate (copy + install) | Fast (no copy) | Fastest |
+| **Git required** | ✅ Yes | ✅ Yes | ❌ No |
+| **Recommended for** | Most work | Quick fixes | Experiments |
+
+<Warning>
+Local mode has no git isolation. All changes go directly to your working directory. Use only for experiments or non-git projects.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Git Integration" icon="git-alt" href="/guides/git-integration">
+    Master the built-in git client for managing branches, commits, and PRs.
+  </Card>
+  
+  <Card title="Background Agents" icon="cloud" href="/guides/using-background-agents">
+    Learn how background agents use cloud worktrees to run independently.
+  </Card>
+  
+  <Card title="Worktree Isolation" icon="code-branch" href="/features/worktree-isolation">
+    Deep dive into the technical details of how worktrees work.
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/advanced/configuration">
+    Customize worktree behavior and setup commands.
+  </Card>
+</CardGroup>

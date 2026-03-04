@@ -1,0 +1,143 @@
+---
+title: Desktop API Overview
+description: Internal tRPC API for 1Code Desktop application
+---
+
+## Overview
+
+The 1Code Desktop application uses a tRPC API for internal communication between the Electron main process and renderer process. This API is not exposed externally but powers all desktop functionality.
+
+<Note>
+  This API is for internal use and extension development only. It is not a public API and may change without notice.
+</Note>
+
+## Architecture
+
+The Desktop API uses [tRPC](https://trpc.io/) for type-safe communication:
+
+- **Main Process**: Electron main process runs the tRPC server
+- **Renderer Process**: React app acts as the tRPC client
+- **Transport**: IPC (Inter-Process Communication) via Electron
+
+## API Routers
+
+The Desktop API is organized into routers by domain:
+
+<CardGroup cols={2}>
+  <Card title="Projects" icon="folder" href="/api/desktop/projects">
+    Manage project folders and git repositories
+  </Card>
+  <Card title="Chats" icon="comments" href="/api/desktop/chats">
+    Create and manage chat sessions and workspaces
+  </Card>
+  <Card title="Agents" icon="robot" href="/api/desktop/agents">
+    Interact with Claude and Codex agents
+  </Card>
+</CardGroup>
+
+## Usage Example
+
+From the renderer process:
+
+```typescript
+import { trpc } from '@/lib/trpc';
+
+// Query example
+const projects = await trpc.projects.list.query();
+
+// Mutation example
+const newProject = await trpc.projects.create.mutate({
+  path: '/path/to/project',
+  name: 'My Project'
+});
+
+// Subscription example (streaming)
+trpc.claude.chat.subscribe(
+  {
+    subChatId: 'sub_123',
+    chatId: 'chat_456',
+    prompt: 'Fix the tests',
+    cwd: '/path/to/project'
+  },
+  {
+    onData: (chunk) => {
+      console.log('Received:', chunk);
+    },
+    onError: (error) => {
+      console.error('Error:', error);
+    }
+  }
+);
+```
+
+## Type Safety
+
+All Desktop API methods are fully type-safe with TypeScript:
+
+```typescript
+// Types are inferred automatically
+const project = await trpc.projects.get.query({ id: 'proj_123' });
+// project is typed as Project | null
+
+if (project) {
+  console.log(project.name); // TypeScript knows this is a string
+  console.log(project.path); // TypeScript knows this is a string
+}
+```
+
+## Error Handling
+
+The Desktop API uses standard tRPC error handling:
+
+```typescript
+try {
+  const result = await trpc.chats.create.mutate({
+    projectId: 'proj_123',
+    name: 'New Chat'
+  });
+} catch (error) {
+  if (error.data?.code === 'NOT_FOUND') {
+    console.error('Project not found');
+  } else {
+    console.error('Unexpected error:', error.message);
+  }
+}
+```
+
+## Database Schema
+
+The Desktop API stores data in a local SQLite database using Drizzle ORM:
+
+- **projects** - Project folders and git info
+- **chats** - Chat sessions (workspaces)
+- **subChats** - Individual conversation threads within a chat
+- **anthropicAccounts** - Claude Code OAuth accounts
+- **claudeCodeCredentials** - Legacy Claude authentication
+
+## Source Code
+
+The Desktop API implementation is located in the source code:
+
+```
+src/main/lib/trpc/routers/
+├── projects.ts       # Projects router
+├── chats.ts         # Chats router
+├── claude.ts        # Claude agent router
+├── codex.ts         # Codex agent router
+├── agents.ts        # Agent utilities
+└── index.ts         # Router composition
+```
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Projects API" icon="folder" href="/api/desktop/projects">
+    Project management methods
+  </Card>
+  <Card title="Chats API" icon="comments" href="/api/desktop/chats">
+    Chat and workspace methods
+  </Card>
+  <Card title="Agents API" icon="robot" href="/api/desktop/agents">
+    Claude and Codex streaming
+  </Card>
+</CardGroup>

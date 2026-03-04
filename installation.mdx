@@ -1,0 +1,623 @@
+---
+title: "Installation"
+description: "Detailed installation instructions for 1Code on macOS, Windows, and Linux"
+---
+
+## Choose your installation method
+
+1Code offers two installation options to suit your needs:
+
+<CardGroup cols={2}>
+  <Card title="Download Pre-built" icon="download" color="#6366f1">
+    **Recommended for most users**
+    
+    - Instant setup, no build tools required
+    - Automatic updates
+    - Background agents support
+    - Supports the project
+  </Card>
+
+  <Card title="Build from Source" icon="code" color="#6366f1">
+    **For developers and contributors**
+    
+    - Full control over the build
+    - Latest unreleased features
+    - Contribute improvements
+    - Completely free
+  </Card>
+</CardGroup>
+
+---
+
+## Option 1: Download Pre-built (Recommended)
+
+Get the latest stable release with automatic updates and cloud features.
+
+<Steps>
+  <Step title="Subscribe and download">
+    1. Visit [1code.dev](https://1code.dev)
+    2. Choose a subscription plan (Pro or Max)
+    3. Download the installer for your platform
+
+    Your subscription includes:
+    - Pre-built desktop apps for all platforms
+    - Background agents in cloud sandboxes
+    - Automations (GitHub, Linear, Slack triggers)
+    - API access for programmatic agent execution
+    - Priority support
+  </Step>
+
+  <Step title="Install on your platform">
+    <Tabs>
+      <Tab title="macOS">
+        **System Requirements:**
+        - macOS 11 (Big Sur) or later
+        - Apple Silicon (M1/M2/M3) or Intel processor
+
+        **Installation:**
+        1. Open the downloaded DMG file
+        2. Drag **1Code** to your **Applications** folder
+        3. Launch 1Code from Applications or Spotlight
+        4. On first launch, macOS may show a security warning:
+           - Go to **System Preferences** → **Security & Privacy**
+           - Click **Open Anyway** next to the 1Code message
+           - Confirm you want to open the app
+
+        <Note>
+          Universal binaries are available - one download works for both Apple Silicon and Intel Macs.
+        </Note>
+      </Tab>
+
+      <Tab title="Windows">
+        **System Requirements:**
+        - Windows 10 or later (64-bit)
+        - x64 or ARM64 processor
+
+        **Installation:**
+        1. Run the downloaded installer (`.exe`)
+        2. Follow the installation wizard
+        3. Choose installation location (default: `C:\Program Files\1Code`)
+        4. Launch 1Code from the Start Menu or desktop shortcut
+
+        **Portable version:**
+        - Download the portable `.exe` instead
+        - No installation needed - run directly from any folder
+        - Settings stored in the same folder as the executable
+
+        <Warning>
+          Windows may show a SmartScreen warning for unsigned apps. Click **More info** → **Run anyway** to proceed.
+        </Warning>
+      </Tab>
+
+      <Tab title="Linux">
+        **System Requirements:**
+        - Ubuntu 20.04+, Debian 11+, Fedora 36+, or equivalent
+        - x64 or ARM64 processor
+        - GNOME, KDE, or other desktop environment
+
+        **AppImage (Universal):**
+        ```bash
+        # Make executable
+        chmod +x 1Code-*.AppImage
+
+        # Run
+        ./1Code-*.AppImage
+        ```
+
+        **Debian/Ubuntu (.deb):**
+        ```bash
+        sudo dpkg -i 1code_*.deb
+        sudo apt-get install -f  # Fix dependencies
+        ```
+
+        **Launch:**
+        ```bash
+        1code  # From terminal
+        # Or find "1Code" in your application menu
+        ```
+
+        <Tip>
+          For AppImage, consider installing [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher) to integrate with your desktop environment.
+        </Tip>
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Configure and launch">
+    After installation:
+
+    1. **Launch 1Code** from your applications menu
+    2. **Sign in** with your 1code.dev account
+    3. **Select a project folder** or create a new one
+    4. **Add API keys** in Settings → API Keys:
+       - Anthropic API key for Claude
+       - OpenAI API key for Codex
+    5. **Start coding** with your first agent!
+  </Step>
+</Steps>
+
+---
+
+## Option 2: Build from Source (Free)
+
+Build 1Code yourself from the open-source repository.
+
+### Prerequisites
+
+Before building, ensure you have these tools installed:
+
+<Tabs>
+  <Tab title="macOS">
+    ```bash
+    # 1. Install Homebrew (if not already installed)
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    # 2. Install Bun
+    curl -fsSL https://bun.sh/install | bash
+
+    # 3. Install Python 3.11 and setuptools
+    brew install python@3.11
+    pip3 install setuptools
+
+    # 4. Install Xcode Command Line Tools
+    xcode-select --install
+    ```
+
+    **Verify installation:**
+    ```bash
+    bun --version      # Should show 1.0.0 or later
+    python3 --version  # Should show 3.11.0 or later
+    ```
+  </Tab>
+
+  <Tab title="Windows">
+    ```powershell
+    # 1. Install Bun for Windows
+    powershell -c "irm bun.sh/install.ps1 | iex"
+
+    # 2. Install Python 3.11+
+    # Download from https://www.python.org/downloads/
+    # Make sure to check "Add Python to PATH" during installation
+
+    # 3. Install setuptools
+    pip install setuptools
+
+    # 4. Install Visual Studio Build Tools
+    # Download from https://visualstudio.microsoft.com/downloads/
+    # Select "Desktop development with C++" workload
+    ```
+
+    **Verify installation:**
+    ```powershell
+    bun --version      # Should show 1.0.0 or later
+    python --version   # Should show 3.11.0 or later
+    ```
+  </Tab>
+
+  <Tab title="Linux">
+    ```bash
+    # 1. Install Bun
+    curl -fsSL https://bun.sh/install | bash
+
+    # 2. Install Python 3.11 and setuptools
+    # Ubuntu/Debian:
+    sudo apt update
+    sudo apt install python3.11 python3-pip
+    pip3 install setuptools
+
+    # Fedora:
+    sudo dnf install python3.11 python3-pip
+    pip3 install setuptools
+
+    # 3. Install build essentials
+    # Ubuntu/Debian:
+    sudo apt install build-essential
+
+    # Fedora:
+    sudo dnf groupinstall "Development Tools"
+    ```
+
+    **Verify installation:**
+    ```bash
+    bun --version      # Should show 1.0.0 or later
+    python3 --version  # Should show 3.11.0 or later
+    ```
+  </Tab>
+</Tabs>
+
+### Build steps
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/21st-dev/1code.git
+    cd 1code
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    bun install
+    ```
+
+    This will:
+    - Install all Node.js dependencies
+    - Rebuild native modules (better-sqlite3, node-pty)
+    - Apply necessary patches
+
+    <Note>
+      The postinstall script automatically rebuilds native modules for Electron. This may take a few minutes.
+    </Note>
+  </Step>
+
+  <Step title="Download agent binaries">
+    **Critical step - do not skip!**
+
+    ```bash
+    # Download Claude Code binary
+    bun run claude:download
+
+    # Download Codex binary
+    bun run codex:download
+    ```
+
+    These commands download the required agent binaries to `resources/bin/`.
+
+    <Warning>
+      Without these binaries, the app will build successfully but agent functionality will not work. The download scripts automatically detect your platform and architecture.
+    </Warning>
+
+    **What gets downloaded:**
+    - Claude Code v2.1.45 (licensed by Anthropic)
+    - Codex v0.98.0 (licensed by OpenAI/Zed)
+    - Platform-specific binaries for your system
+  </Step>
+
+  <Step title="Build the application">
+    ```bash
+    # Compile TypeScript and bundle the app
+    bun run build
+    ```
+
+    This uses `electron-vite` to build:
+    - Main process (`src/main/`)
+    - Preload scripts (`src/preload/`)
+    - Renderer (React UI in `src/renderer/`)
+
+    Output goes to the `out/` directory.
+  </Step>
+
+  <Step title="Package for your platform">
+    Choose the command for your platform:
+
+    <CodeGroup>
+    ```bash macOS
+    bun run package:mac
+    ```
+
+    ```bash Windows
+    bun run package:win
+    ```
+
+    ```bash Linux
+    bun run package:linux
+    ```
+    </CodeGroup>
+
+    This uses `electron-builder` to create:
+    - **macOS**: DMG and ZIP files (both Intel and Apple Silicon)
+    - **Windows**: NSIS installer and portable EXE
+    - **Linux**: AppImage and DEB packages
+
+    Packaged apps appear in the `release/` directory.
+
+    <Tip>
+      To build for all platforms at once: `bun run dist`
+    </Tip>
+  </Step>
+
+  <Step title="Launch the app">
+    **Option A: Run the packaged app**
+    ```bash
+    # macOS
+    open release/mac/1Code.app
+
+    # Linux
+    ./release/1Code-*.AppImage
+
+    # Windows
+    .\release\1Code.exe
+    ```
+
+    **Option B: Run in development mode**
+    ```bash
+    bun run dev
+    ```
+
+    Development mode enables:
+    - Hot reload for UI changes
+    - DevTools open by default
+    - Source maps for debugging
+  </Step>
+</Steps>
+
+### Development workflow
+
+For active development, use these commands:
+
+```bash
+# Start development mode with hot reload
+bun run dev
+
+# Type check without building
+bun run ts:check
+
+# Database migrations (Drizzle ORM)
+bun run db:generate    # Generate migration from schema changes
+bun run db:push        # Push schema directly (dev only)
+bun run db:studio      # Open Drizzle Studio UI
+
+# Preview production build without packaging
+bun run preview
+```
+
+---
+
+## Post-installation setup
+
+After installation, complete these steps to start using 1Code:
+
+### 1. Add API keys
+
+<Steps>
+  <Step title="Open settings">
+    Click the **Settings** icon in the sidebar or press `Cmd/Ctrl + ,`
+  </Step>
+
+  <Step title="Navigate to API Keys">
+    Go to **Settings** → **API Keys**
+  </Step>
+
+  <Step title="Add your keys">
+    **For Claude:**
+    1. Get an API key from [console.anthropic.com](https://console.anthropic.com/)
+    2. Paste it in the **Anthropic API Key** field
+    3. Click **Save**
+
+    **For Codex:**
+    1. Get an API key from [platform.openai.com](https://platform.openai.com/)
+    2. Paste it in the **OpenAI API Key** field
+    3. Click **Save**
+
+    <Note>
+      API keys are stored securely using your operating system's credential storage (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux).
+    </Note>
+  </Step>
+</Steps>
+
+### 2. Configure worktree settings
+
+By default, each chat runs in an isolated Git worktree. You can customize this:
+
+1. Go to **Settings** → **Worktrees**
+2. Configure:
+   - **Enable worktrees**: Toggle on/off
+   - **Worktree location**: Where worktrees are created (default: `.worktrees/` in project root)
+   - **Auto-cleanup**: Delete worktrees after chat ends
+
+### 3. Optional: Set up MCP servers
+
+Connect external tools and data sources to your agents:
+
+1. Go to **Settings** → **MCP Servers**
+2. Browse the plugin marketplace
+3. Install servers with one click
+4. Configure server settings if needed
+
+Learn more in [MCP Integration](/features/mcp-integration).
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Build fails with 'claude:download' not found" icon="circle-exclamation">
+    **Cause:** Agent download scripts failed or were skipped.
+
+    **Solution:**
+    ```bash
+    # Re-run the download scripts
+    bun run claude:download
+    bun run codex:download
+
+    # Verify binaries exist
+    ls -la resources/bin/
+    # Should show: claude (or claude.exe), codex (or codex.exe)
+    ```
+  </Accordion>
+
+  <Accordion title="Native module rebuild errors" icon="gear">
+    **Cause:** Python version incompatibility or missing build tools.
+
+    **Solution:**
+    ```bash
+    # Check Python version (3.11+ required)
+    python3 --version
+
+    # Install setuptools if missing
+    pip3 install setuptools
+
+    # Manually rebuild native modules
+    npm install -g electron-rebuild
+    electron-rebuild -f -w better-sqlite3,node-pty
+    ```
+  </Accordion>
+
+  <Accordion title="App builds but agents don't work" icon="robot">
+    **Cause:** Agent binaries missing or in wrong location.
+
+    **Solution:**
+    1. Verify binaries exist:
+       ```bash
+       ls -la resources/bin/
+       # Should show platform-specific folder (darwin-arm64, linux-x64, etc.)
+       ```
+
+    2. Re-download if missing:
+       ```bash
+       bun run claude:download
+       bun run codex:download
+       ```
+
+    3. Check binary permissions (Unix):
+       ```bash
+       chmod +x resources/bin/*/claude
+       chmod +x resources/bin/*/codex
+       ```
+  </Accordion>
+
+  <Accordion title="electron-builder fails on macOS" icon="apple">
+    **Cause:** Code signing or notarization issues.
+
+    **Solution:**
+    For development builds, disable signing:
+    ```bash
+    # Add to package.json build config:
+    "mac": {
+      "identity": null
+    }
+    ```
+
+    Or build without signing:
+    ```bash
+    CSC_IDENTITY_AUTO_DISCOVERY=false bun run package:mac
+    ```
+  </Accordion>
+
+  <Accordion title="Database migration errors" icon="database">
+    **Cause:** Schema changes without migration or corrupted database.
+
+    **Solution:**
+    ```bash
+    # Generate new migration from schema changes
+    bun run db:generate
+
+    # Or push schema directly (dev only - data loss possible)
+    bun run db:push
+
+    # Check database location
+    # macOS: ~/Library/Application Support/1Code/data/agents.db
+    # Linux: ~/.config/1Code/data/agents.db
+    # Windows: %APPDATA%/1Code/data/agents.db
+    ```
+  </Accordion>
+
+  <Accordion title="Bun install fails or hangs" icon="package">
+    **Cause:** Network issues or corrupted cache.
+
+    **Solution:**
+    ```bash
+    # Clear Bun cache
+    rm -rf ~/.bun/install/cache
+
+    # Try with verbose logging
+    bun install --verbose
+
+    # Or use npm as fallback
+    npm install
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Updating 1Code
+
+<Tabs>
+  <Tab title="Pre-built (Auto-update)">
+    1Code automatically checks for updates on startup and when the window regains focus.
+
+    **When an update is available:**
+    1. You'll see an **Update Available** banner
+    2. Click **Download** to download in the background
+    3. Once downloaded, click **Restart Now** to install
+
+    **Manual update check:**
+    - Go to **Settings** → **About** → **Check for Updates**
+
+    <Note>
+      Updates use the ZIP format, not DMG, for faster downloads and installation.
+    </Note>
+  </Tab>
+
+  <Tab title="Built from Source">
+    Pull the latest changes and rebuild:
+
+    ```bash
+    # Pull latest code
+    git pull origin main
+
+    # Clean old builds
+    rm -rf out/ release/
+
+    # Install new dependencies
+    bun install
+
+    # Re-download agent binaries if versions changed
+    bun run claude:download
+    bun run codex:download
+
+    # Rebuild
+    bun run build
+    bun run package:mac  # or package:win, package:linux
+    ```
+
+    <Tip>
+      Check `package.json` scripts section for version numbers:
+      ```json
+      "claude:download": "node scripts/download-claude-binary.mjs --version=2.1.45"
+      "codex:download": "node scripts/download-codex-binary.mjs --version=0.98.0"
+      ```
+    </Tip>
+  </Tab>
+</Tabs>
+
+---
+
+## System requirements summary
+
+| Platform | Minimum | Recommended |
+|----------|---------|-------------|
+| **macOS** | macOS 11 Big Sur | macOS 13 Ventura or later |
+| **Windows** | Windows 10 (64-bit) | Windows 11 |
+| **Linux** | Ubuntu 20.04, Debian 11 | Ubuntu 22.04+, Fedora 38+ |
+| **RAM** | 4 GB | 8 GB or more |
+| **Disk Space** | 500 MB | 1 GB (with agent binaries) |
+| **CPU** | Dual-core | Quad-core or better |
+
+**Additional requirements for building:**
+- Bun 1.0.0 or later
+- Python 3.11+ with setuptools
+- C++ compiler (Xcode CLI Tools, Visual Studio Build Tools, or gcc)
+
+---
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Run your first agent in under 5 minutes.
+  </Card>
+
+  <Card title="Creating Your First Chat" icon="messages" href="/guides/creating-your-first-chat">
+    Learn the basics of chat sessions and agent interaction.
+  </Card>
+
+  <Card title="Worktree Isolation" icon="code-branch" href="/guides/working-with-worktrees">
+    Understand how 1Code keeps your main branch safe.
+  </Card>
+
+  <Card title="Join Discord" icon="discord" href="https://discord.gg/8ektTZGnj4">
+    Get help from the community and 1Code team.
+  </Card>
+</CardGroup>

@@ -1,0 +1,116 @@
+---
+title: Authentication
+description: Authenticate your API requests using API keys
+---
+
+## API Keys
+
+The 1Code API uses API keys for authentication. Include your API key in the `Authorization` header of each request.
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://1code.dev/api/v1/tasks
+```
+
+## Getting Your API Key
+
+1. Sign in to your [1Code account](https://1code.dev)
+2. Navigate to Settings > API Keys
+3. Click "Create API Key"
+4. Copy and securely store your API key
+
+<Warning>
+  API keys grant full access to your account. Never share your API keys or commit them to version control.
+</Warning>
+
+## API Key Format
+
+API keys follow the format:
+
+```
+1code_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+- Keys starting with `1code_live_` are production keys
+- Keys starting with `1code_test_` are test keys (sandbox mode)
+
+## Authentication Errors
+
+### Missing API Key
+
+**HTTP 401 Unauthorized**
+
+```json
+{
+  "error": "missing_authorization",
+  "message": "Authorization header is required"
+}
+```
+
+### Invalid API Key
+
+**HTTP 401 Unauthorized**
+
+```json
+{
+  "error": "invalid_api_key",
+  "message": "The API key provided is invalid or has been revoked"
+}
+```
+
+### Expired API Key
+
+**HTTP 401 Unauthorized**
+
+```json
+{
+  "error": "expired_api_key",
+  "message": "The API key has expired. Please generate a new one."
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Store keys securely">
+    Use environment variables or a secrets manager to store API keys. Never hardcode them in your source code.
+
+    ```bash
+    export ONECODE_API_KEY="1code_live_..."
+    ```
+  </Accordion>
+
+  <Accordion title="Rotate keys regularly">
+    Generate new API keys periodically and revoke old ones to minimize security risks.
+  </Accordion>
+
+  <Accordion title="Use test keys for development">
+    Use test keys during development to avoid affecting production data. Test keys run in sandbox mode.
+  </Accordion>
+
+  <Accordion title="Monitor API usage">
+    Track your API usage in the dashboard to detect unauthorized access or unusual patterns.
+  </Accordion>
+</AccordionGroup>
+
+## Managing API Keys
+
+### List API Keys
+
+View all your API keys in the dashboard at Settings > API Keys.
+
+### Revoke API Keys
+
+Revoke an API key immediately if it's compromised:
+
+1. Go to Settings > API Keys
+2. Click the revoke button next to the key
+3. Confirm revocation
+
+Revoked keys cannot be restored. You'll need to generate a new key.
+
+## Next Steps
+
+<Card title="Create your first task" icon="rocket" href="/api/tasks">
+  Start using the API to run agent tasks
+</Card>

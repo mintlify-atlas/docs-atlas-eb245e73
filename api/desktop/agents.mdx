@@ -1,0 +1,429 @@
+---
+title: Agents Router
+description: Interact with Claude and Codex agents in 1Code Desktop
+---
+
+## Overview
+
+The Agents router provides methods to interact with Claude Code and Codex agents. Both routers support real-time streaming communication with AI agents.
+
+## Claude Router
+
+### chat
+
+Stream chat with Claude Code. Single subscription handles everything including tool execution and thinking.
+
+```typescript
+trpc.claude.chat.subscribe(
+  {
+    subChatId: 'sub_123',
+    chatId: 'chat_456',
+    prompt: 'Fix the failing tests',
+    cwd: '/path/to/project',
+    mode: 'agent'
+  },
+  {
+    onData: (chunk) => {
+      if (chunk.type === 'text-delta') {
+        process.stdout.write(chunk.textDelta);
+      } else if (chunk.type === 'tool-call-start') {
+        console.log('Tool:', chunk.toolName);
+      } else if (chunk.type === 'finish') {
+        console.log('Done!');
+      }
+    },
+    onError: (error) => {
+      console.error('Error:', error);
+    }
+  }
+);
+```
+
+### Input Parameters
+
+<ParamField body="subChatId" type="string" required>
+  Sub-chat ID
+</ParamField>
+
+<ParamField body="chatId" type="string" required>
+  Parent chat ID
+</ParamField>
+
+<ParamField body="prompt" type="string" required>
+  User message
+</ParamField>
+
+<ParamField body="cwd" type="string" required>
+  Working directory (worktree path)
+</ParamField>
+
+<ParamField body="projectPath" type="string">
+  Original project path for MCP config lookup
+</ParamField>
+
+<ParamField body="mode" type="enum" default="agent">
+  `agent` or `plan`
+</ParamField>
+
+<ParamField body="sessionId" type="string">
+  Existing session ID for resume
+</ParamField>
+
+<ParamField body="model" type="string">
+  Model to use
+</ParamField>
+
+<ParamField body="customConfig" type="object">
+  Custom API key config:
+  ```typescript
+  {
+    model: string;
+    token: string;
+    baseUrl: string;
+  }
+  ```
+</ParamField>
+
+<ParamField body="maxThinkingTokens" type="number">
+  Enable extended thinking with max tokens
+</ParamField>
+
+<ParamField body="images" type="array">
+  Image attachments:
+  ```typescript
+  Array<{
+    base64Data: string;
+    mediaType: string;
+    filename?: string;
+  }>
+  ```
+</ParamField>
+
+<ParamField body="historyEnabled" type="boolean">
+  Enable message history and resume
+</ParamField>
+
+<ParamField body="offlineModeEnabled" type="boolean">
+  Enable offline mode (Ollama fallback)
+</ParamField>
+
+<ParamField body="enableTasks" type="boolean" default={true}>
+  Enable task management tools
+</ParamField>
+
+### Chunk Types
+
+The stream emits different chunk types:
+
+```typescript
+type UIMessageChunk =
+  | { type: 'text-start' }
+  | { type: 'text-delta'; textDelta: string }
+  | { type: 'thinking-start' }
+  | { type: 'thinking-delta'; thinkingDelta: string }
+  | { type: 'tool-call-start'; toolUseId: string; toolName: string }
+  | { type: 'tool-call-delta'; toolUseId: string; argsTextDelta: string }
+  | { type: 'tool-call-result'; toolUseId: string; result: any }
+  | { type: 'tool-call-error'; toolUseId: string; error: string }
+  | { type: 'finish'; usage?: UsageMetadata }
+  | { type: 'error'; errorText: string }
+```
+
+### Examples
+
+#### Basic streaming
+
+```typescript
+const chunks: string[] = [];
+
+trpc.claude.chat.subscribe(
+  {
+    subChatId: 'sub_123',
+    chatId: 'chat_456',
+    prompt: 'Add error handling',
+    cwd: '/path/to/project'
+  },
+  {
+    onData: (chunk) => {
+      if (chunk.type === 'text-delta') {
+        chunks.push(chunk.textDelta);
+      }
+    },
+    onComplete: () => {
+      const fullText = chunks.join('');
+      console.log('Full response:', fullText);
+    }
+  }
+);
+```
+
+#### With images
+
+```typescript
+const base64Image = /* ... base64 encoded image ... */;
+
+trpc.claude.chat.subscribe(
+  {
+    subChatId: 'sub_123',
+    chatId: 'chat_456',
+    prompt: 'What is in this screenshot?',
+    cwd: '/path/to/project',
+    images: [
+      {
+        base64Data: base64Image,
+        mediaType: 'image/png',
+        filename: 'screenshot.png'
+      }
+    ]
+  },
+  { /* ... */ }
+);
+```
+
+#### With custom API key
+
+```typescript
+trpc.claude.chat.subscribe(
+  {
+    subChatId: 'sub_123',
+    chatId: 'chat_456',
+    prompt: 'Help me refactor this',
+    cwd: '/path/to/project',
+    customConfig: {
+      model: 'claude-sonnet-4',
+      token: process.env.ANTHROPIC_API_KEY!,
+      baseUrl: 'https://api.anthropic.com'
+    }
+  },
+  { /* ... */ }
+);
+```
+
+### MCP Configuration
+
+Claude automatically loads MCP servers from:
+
+- `~/.claude.json` - Global and per-project MCP configs
+- `~/.claude/.claude.json` - Additional global config
+- `~/.claude/mcp.json` - MCP-only config
+- `.mcp.json` - Project-level MCP config
+
+See src/main/lib/trpc/routers/claude.ts:1266-1376 for MCP resolution logic.
+
+---
+
+## Codex Router
+
+### chat
+
+Stream chat with Codex agent.
+
+```typescript
+trpc.codex.chat.subscribe(
+  {
+    subChatId: 'sub_123',
+    chatId: 'chat_456',
+    runId: crypto.randomUUID(),
+    prompt: 'Implement user authentication',
+    model: 'gpt-5.3-codex/high',
+    cwd: '/path/to/project'
+  },
+  {
+    onData: (chunk) => {
+      console.log('Chunk:', chunk);
+    }
+  }
+);
+```
+
+### Input Parameters
+
+<ParamField body="subChatId" type="string" required>
+  Sub-chat ID
+</ParamField>
+
+<ParamField body="chatId" type="string" required>
+  Parent chat ID
+</ParamField>
+
+<ParamField body="runId" type="string" required>
+  Unique run identifier (for superseding old runs)
+</ParamField>
+
+<ParamField body="prompt" type="string" required>
+  User message
+</ParamField>
+
+<ParamField body="model" type="string">
+  Codex model (default: `gpt-5.3-codex/high`)
+</ParamField>
+
+<ParamField body="cwd" type="string" required>
+  Working directory
+</ParamField>
+
+<ParamField body="projectPath" type="string">
+  Original project path
+</ParamField>
+
+<ParamField body="mode" type="enum" default="agent">
+  `agent` or `plan`
+</ParamField>
+
+<ParamField body="sessionId" type="string">
+  Existing session ID for resume
+</ParamField>
+
+<ParamField body="forceNewSession" type="boolean">
+  Force create a new session
+</ParamField>
+
+<ParamField body="images" type="array">
+  Image attachments
+</ParamField>
+
+<ParamField body="authConfig" type="object">
+  API key authentication:
+  ```typescript
+  {
+    apiKey: string;
+  }
+  ```
+</ParamField>
+
+### Codex Integration
+
+Check Codex login status:
+
+```typescript
+const integration = await trpc.codex.getIntegration.query();
+
+console.log('Status:', integration.state);
+console.log('Connected:', integration.isConnected);
+```
+
+**Returns:**
+
+```typescript
+{
+  state: 'connected_chatgpt' | 'connected_api_key' | 'not_logged_in' | 'unknown';
+  isConnected: boolean;
+  rawOutput: string;
+  exitCode: number | null;
+}
+```
+
+### Codex Login
+
+Start Codex login flow:
+
+```typescript
+const session = await trpc.codex.startLogin.mutate();
+
+console.log('Login URL:', session.url);
+console.log('Session ID:', session.sessionId);
+
+// Poll for completion
+const checkStatus = async () => {
+  const status = await trpc.codex.getLoginSession.query({
+    sessionId: session.sessionId
+  });
+  
+  if (status.state === 'success') {
+    console.log('Login successful!');
+  } else if (status.state === 'error') {
+    console.error('Login failed:', status.error);
+  } else if (status.state === 'running') {
+    setTimeout(checkStatus, 1000);
+  }
+};
+
+checkStatus();
+```
+
+### Codex Logout
+
+```typescript
+const result = await trpc.codex.logout.mutate();
+
+if (result.success) {
+  console.log('Logged out successfully');
+}
+```
+
+### Codex MCP Configuration
+
+Get all Codex MCP servers:
+
+```typescript
+const config = await trpc.codex.getAllMcpConfig.query();
+
+for (const group of config.groups) {
+  console.log(`\n${group.groupName}:`);
+  
+  for (const server of group.mcpServers) {
+    console.log(`  ${server.name}: ${server.status}`);
+    console.log(`    Tools: ${server.tools.length}`);
+  }
+}
+```
+
+Add Codex MCP server:
+
+```typescript
+// Stdio server
+await trpc.codex.addMcpServer.mutate({
+  name: 'filesystem',
+  scope: 'global',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-filesystem', '/path/to/dir']
+});
+
+// HTTP server
+await trpc.codex.addMcpServer.mutate({
+  name: 'weather',
+  scope: 'global',
+  transport: 'http',
+  url: 'https://weather-mcp.example.com'
+});
+```
+
+Remove Codex MCP server:
+
+```typescript
+await trpc.codex.removeMcpServer.mutate({
+  name: 'filesystem',
+  scope: 'global'
+});
+```
+
+## Agent Features
+
+Both Claude and Codex agents support:
+
+- **Real-time streaming** - Token-by-token text streaming
+- **Tool execution** - Bash, file editing, web search, etc.
+- **MCP integration** - Model Context Protocol for custom tools
+- **Image support** - Multi-modal with image attachments
+- **Session resume** - Continue from previous conversations
+- **Offline mode** - Ollama fallback when offline (Claude only)
+- **Custom models** - Bring your own API keys
+
+## Error Handling
+
+```typescript
+trpc.claude.chat.subscribe(
+  { /* ... */ },
+  {
+    onData: (chunk) => {
+      if (chunk.type === 'error') {
+        console.error('Agent error:', chunk.errorText);
+      }
+    },
+    onError: (error) => {
+      console.error('Stream error:', error.message);
+    }
+  }
+);
+```

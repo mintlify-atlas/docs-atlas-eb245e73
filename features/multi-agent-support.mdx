@@ -1,0 +1,147 @@
+---
+title: Multi-Agent Support
+description: Switch between Claude Code, Codex, and custom models in a single interface
+---
+
+1Code brings together multiple AI coding agents in one unified interface. Switch between Claude Code, Codex, and custom models without changing tools or workflows.
+
+## Why It Matters
+
+Different agents have different strengths:
+- **Claude Code** excels at complex refactoring and architectural changes
+- **Codex** offers advanced planning with structured proposals
+- **Custom models** let you bring your own API keys and providers
+
+With multi-agent support, you can:
+- Use the right agent for each task
+- Compare approaches from different models
+- Switch providers without losing context
+- Bring your own API keys (BYOK) for any provider
+
+## Available Agents
+
+### Claude Code
+
+Claude Code is Anthropic's official coding agent, integrated directly into 1Code.
+
+**Setup:**
+1. Go to Settings → Accounts
+2. Click "Connect Claude Code"
+3. Sign in with your Anthropic account or import an existing token
+
+**Features:**
+- Full access to Claude 3.5 Sonnet and other Anthropic models
+- Native tool support for file editing, bash commands, and web search
+- OAuth integration for secure authentication
+- Multi-account support for switching between workspaces
+
+**Implementation:** The Claude Code router (`src/main/lib/trpc/routers/claude-code.ts:109`) manages OAuth flows and token storage using Electron's secure storage.
+
+### Codex
+
+Codex is an AI coding agent from Zed Industries, featuring advanced planning capabilities.
+
+**Setup:**
+1. Go to Settings → Accounts
+2. Click "Connect Codex"
+3. Sign in with your ChatGPT account or use an API key
+
+**Features:**
+- GPT-5.3 Codex model with high-quality reasoning
+- Built-in plan mode with structured proposals
+- API key authentication for direct access
+- Session persistence across restarts
+
+**Implementation:** The Codex router (`src/main/lib/trpc/routers/codex.ts:1`) uses the Agent Communication Protocol (ACP) to communicate with the Codex binary.
+
+### Custom Models (BYOK)
+
+Bring your own API keys to use any OpenAI-compatible provider.
+
+**Supported Providers:**
+- OpenAI (GPT-4, GPT-4o, o1)
+- Anthropic (Claude via API key)
+- Google Gemini
+- Any OpenAI-compatible endpoint
+
+**Setup:**
+1. Go to Settings → Models
+2. Add your API key
+3. Configure base URL (for custom providers)
+4. Select your model
+
+## Switching Between Agents
+
+### In the UI
+
+<Steps>
+  <Step title="Open Model Selector">
+    Click the model name in the chat header or press `Cmd+K`
+  </Step>
+  
+  <Step title="Choose Your Agent">
+    Select from Claude Code, Codex, or custom models in the dropdown
+  </Step>
+  
+  <Step title="Continue Chatting">
+    Your conversation continues with the new agent. Previous messages remain in context.
+  </Step>
+</Steps>
+
+### Per-Chat Configuration
+
+Each chat can use a different agent. This is useful for:
+- Testing the same prompt with multiple models
+- Delegating specific tasks to specialized agents
+- Comparing output quality across providers
+
+## Agent Marketplace
+
+Custom agents can be loaded from:
+- **User agents:** `~/.claude/agents/`
+- **Project agents:** `.claude/agents/` in your repo
+- **Plugin agents:** Installed via the plugin marketplace
+
+**Example Agent File:**
+
+```markdown
+---
+name: code-reviewer
+description: Reviews code for best practices and security issues
+model: claude-3-5-sonnet-20241022
+tools:
+  - read
+  - grep
+  - bash
+---
+
+You are an expert code reviewer. Focus on:
+- Security vulnerabilities
+- Performance optimizations
+- Code maintainability
+- Best practices for the given language
+```
+
+Agents are loaded dynamically from the filesystem (`src/main/lib/trpc/routers/agents.ts:17`) and can be referenced with `@agent-name` in chat.
+
+## Best Practices
+
+<Card title="Choose the Right Agent" icon="lightbulb">
+  - Use **Claude Code** for general coding tasks and refactoring
+  - Use **Codex** when you need structured planning before execution
+  - Use **custom models** for specialized domains or cost optimization
+</Card>
+
+<Card title="Compare Outputs" icon="code">
+  Fork a chat at any message to try the same prompt with a different agent.
+</Card>
+
+<Card title="Set Project Defaults" icon="folder">
+  Configure default agents per project in `.claude/config.json`
+</Card>
+
+## Related Features
+
+- [Plan Mode](/features/plan-mode) - Structured planning with Codex
+- [MCP Integration](/features/mcp-integration) - Extend agents with custom tools
+- [Worktree Isolation](/features/worktree-isolation) - Run agents in isolated environments

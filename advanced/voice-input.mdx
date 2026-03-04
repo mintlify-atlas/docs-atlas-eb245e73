@@ -1,0 +1,412 @@
+---
+title: 'Voice Input'
+description: 'Use hold-to-talk dictation for hands-free coding with AI agents'
+icon: 'microphone'
+---
+
+1Code includes hold-to-talk voice input powered by OpenAI's Whisper API for accurate speech-to-text transcription.
+
+## Overview
+
+Voice input allows you to:
+- Dictate prompts hands-free while coding
+- Use voice during code reviews or pair programming
+- Input long descriptions without typing
+- Work more ergonomically by reducing keyboard use
+
+<Note>
+Voice input requires either a paid 1Code subscription or your own OpenAI API key.
+</Note>
+
+## Setup
+
+### Option 1: 1Code Subscription (Recommended)
+
+Voice transcription is included with paid plans:
+- **Pro Plan** - Includes voice input
+- **Max Plan** - Includes voice input
+
+No additional setup required. Just sign in and start using voice.
+
+### Option 2: Bring Your Own OpenAI Key
+
+If you're using the open-source build without a subscription:
+
+1. Get an OpenAI API key from [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+2. Add it to your environment or settings
+
+#### Setting via Environment Variable
+
+Add to your shell profile (`~/.zshrc` or `~/.bashrc`):
+
+```bash ~/.zshrc
+export OPENAI_API_KEY="sk-..."
+```
+
+Or use a `.env.local` file with the `MAIN_VITE_` prefix:
+
+```bash .env.local
+MAIN_VITE_OPENAI_API_KEY=sk-...
+```
+
+Restart 1Code after setting the environment variable.
+
+#### Setting via UI
+
+1. Open Settings → Models
+2. Find "OpenAI API Key" section
+3. Enter your API key
+4. Save
+
+## Using Voice Input
+
+### Basic Usage
+
+1. Click the microphone icon in the chat input
+2. **Hold** the button while speaking
+3. Release when finished
+4. Your speech is transcribed and inserted into the input
+
+<Tip>
+Voice input works best in quiet environments. Use a quality microphone for better accuracy.
+</Tip>
+
+### Keyboard Shortcut
+
+You can also trigger voice input with a keyboard shortcut (configurable in Settings).
+
+### Language Support
+
+Voice input supports multiple languages. You can specify the language code when transcribing:
+
+- `en` - English
+- `es` - Spanish
+- `fr` - French
+- `de` - German
+- `ru` - Russian
+- `zh` - Chinese
+- And many more (Whisper supports 50+ languages)
+
+## How It Works
+
+### Architecture
+
+From `/home/daytona/workspace/source/src/main/lib/trpc/routers/voice.ts:5-7`:
+
+```typescript
+/**
+ * Voice TRPC router
+ * Provides voice-to-text transcription using OpenAI Whisper API
+ *
+ * For authenticated users (with subscription): uses 21st.dev backend
+ * For open-source users: requires OPENAI_API_KEY in environment
+ */
+```
+
+### Priority Order
+
+1Code checks for API keys in this priority order:
+
+1. **User-configured key** (from Settings) - highest priority
+2. **Vite env vars** (`.env.local` with `MAIN_VITE_OPENAI_API_KEY`)
+3. **Process environment** (`process.env.OPENAI_API_KEY`)
+4. **Shell environment** (loaded from `~/.zshrc` or `~/.bashrc`)
+
+From `/home/daytona/workspace/source/src/main/lib/trpc/routers/voice.ts:117-177`:
+
+```typescript
+function getOpenAIApiKey(): string | null {
+  // First check user-configured key (highest priority)
+  if (userConfiguredOpenAIKey && userConfiguredOpenAIKey.startsWith("sk-")) {
+    return userConfiguredOpenAIKey
+  }
+
+  // Check Vite env vars (works with .env.local files)
+  const viteKey = (import.meta.env as Record<string, string | undefined>)
+    .MAIN_VITE_OPENAI_API_KEY
+  if (viteKey) {
+    return viteKey
+  }
+
+  // Check process.env
+  if (process.env.OPENAI_API_KEY) {
+    return process.env.OPENAI_API_KEY
+  }
+
+  // Try to get from shell environment
+  const shell = process.env.SHELL || "/bin/zsh"
+  const result = execSync(`${shell} -ilc 'echo $OPENAI_API_KEY'`, {
+    encoding: "utf8",
+    timeout: 5000,
+  })
+
+  return result.trim() || null
+}
+```
+
+### Transcription Process
+
+1. **Record**: Audio is captured in WebM format (browser native)
+2. **Upload**: Audio buffer is sent to transcription service
+3. **Transcribe**: Whisper API converts speech to text
+4. **Clean**: Text is normalized (whitespace, punctuation)
+5. **Insert**: Transcribed text is inserted into chat input
+
+From `/home/daytona/workspace/source/src/main/lib/trpc/routers/voice.ts:29-45`:
+
+```typescript
+function cleanTranscribedText(text: string): string {
+  return (
+    text
+      // Remove zero-width and invisible characters
+      .replace(/[\u200B-\u200D\u2060\uFEFF\u00AD]/g, "")
+      // Normalize unicode whitespace to regular space
+      .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, " ")
+      // Replace all types of newlines and line breaks with space
+      .replace(/[\r\n\u2028\u2029]+/g, " ")
+      // Replace tabs with space
+      .replace(/\t+/g, " ")
+      // Collapse multiple spaces into one
+      .replace(/ +/g, " ")
+      // Trim leading/trailing whitespace
+      .trim()
+  )
+}
+```
+
+### Audio Limits
+
+- **Max file size**: 25MB (Whisper API limit)
+- **Timeout**: 30 seconds per request
+- **Supported formats**: WebM, WAV, MP3, M4A, OGG
+
+## API Implementation
+
+### Check Availability
+
+From `/home/daytona/workspace/source/src/main/lib/trpc/routers/voice.ts:397-440`:
+
+```typescript
+isAvailable: publicProcedure.query(async () => {
+  const hasLocalKey = !!getOpenAIApiKey()
+
+  // Local API key always works
+  if (hasLocalKey) {
+    return {
+      available: true,
+      method: "local" as const,
+      reason: undefined,
+    }
+  }
+
+  // Check if user has paid subscription
+  const hasPaid = await hasPaidSubscription()
+  if (hasPaid) {
+    return {
+      available: true,
+      method: "backend" as const,
+      reason: undefined,
+    }
+  }
+
+  // Check if authenticated but free plan
+  const isAuthenticated = authManager?.isAuthenticated() ?? false
+  if (isAuthenticated) {
+    return {
+      available: false,
+      method: null,
+      reason: "Voice input requires a paid subscription or OpenAI API key",
+    }
+  }
+
+  return {
+    available: false,
+    method: null,
+    reason: "Add your OpenAI API key in Settings > Models, or sign in with a paid subscription",
+  }
+})
+```
+
+### Transcribe Audio
+
+```typescript
+transcribe: publicProcedure
+  .input(
+    z.object({
+      audio: z.string(), // base64 encoded audio
+      format: z.enum(["webm", "wav", "mp3", "m4a", "ogg"]).default("webm"),
+      language: z.string().optional(), // ISO 639-1 code
+    })
+  )
+  .mutation(async ({ input }) => {
+    const audioBuffer = Buffer.from(input.audio, "base64")
+
+    // If local OPENAI_API_KEY exists, use it directly
+    const hasLocalKey = !!getOpenAIApiKey()
+    if (hasLocalKey) {
+      const text = await transcribeWithWhisper(
+        audioBuffer,
+        input.format,
+        input.language
+      )
+      return { text }
+    }
+
+    // Otherwise, try backend if user is authenticated
+    const isAuthenticated = authManager?.isAuthenticated() ?? false
+    if (isAuthenticated) {
+      const text = await transcribeViaBackend(
+        audioBuffer,
+        input.format,
+        input.language
+      )
+      return { text }
+    }
+
+    throw new Error(
+      "Voice input requires signing in or setting OPENAI_API_KEY"
+    )
+  })
+```
+
+## Cost & Usage
+
+### 1Code Subscription
+
+Voice transcription is included in your subscription:
+- No per-usage billing
+- Unlimited transcriptions (fair use)
+- No need to manage API keys
+
+### OpenAI API (BYOK)
+
+If using your own OpenAI key:
+- **Pricing**: ~$0.006 per minute of audio (Whisper API)
+- **Billing**: Charged to your OpenAI account
+- **Limits**: Based on your OpenAI account tier
+
+See [OpenAI pricing](https://openai.com/pricing) for current rates.
+
+## Privacy & Security
+
+### Audio Data
+
+- **Recording**: Captured locally in browser, never stored to disk
+- **Transmission**: Sent directly to OpenAI or 1Code backend over HTTPS
+- **Storage**: Not stored after transcription (immediately discarded)
+- **Encryption**: All requests use TLS encryption
+
+### API Keys
+
+When using your own OpenAI key:
+- **Storage**: Encrypted using Electron `safeStorage`
+- **Transmission**: Never sent to 1Code backend
+- **Access**: Only used for direct OpenAI API calls
+
+<Warning>
+Never share your OpenAI API key. Treat it like a password.
+</Warning>
+
+## Troubleshooting
+
+### Voice Input Not Available
+
+<AccordionGroup>
+  <Accordion title="Check subscription status">
+    Voice input requires a paid subscription. Check your plan at Settings → Account.
+  </Accordion>
+
+  <Accordion title="Verify API key">
+    If using BYOK, ensure your OpenAI key:
+    - Starts with `sk-`
+    - Has not expired or been revoked
+    - Is set in environment or Settings
+  </Accordion>
+
+  <Accordion title="Restart 1Code">
+    After setting environment variables, restart the app to reload configuration.
+  </Accordion>
+</AccordionGroup>
+
+### Transcription Errors
+
+<AccordionGroup>
+  <Accordion title="Check microphone permissions">
+    Ensure 1Code has microphone access:
+    - **macOS**: System Settings → Privacy & Security → Microphone
+    - **Windows**: Settings → Privacy → Microphone
+    - **Linux**: Check PulseAudio/ALSA permissions
+  </Accordion>
+
+  <Accordion title="Test microphone">
+    Verify your microphone works in other apps (Zoom, Discord, etc.)
+  </Accordion>
+
+  <Accordion title="Check audio format">
+    Try a different audio format if transcription fails. WebM usually works best.
+  </Accordion>
+
+  <Accordion title="Reduce background noise">
+    Whisper performs better with clear audio. Minimize background noise and speak clearly.
+  </Accordion>
+</AccordionGroup>
+
+### API Key Issues
+
+<AccordionGroup>
+  <Accordion title="Invalid key format">
+    OpenAI keys must start with `sk-`. Double-check you copied the full key.
+  </Accordion>
+
+  <Accordion title="Rate limiting">
+    If you hit rate limits, wait a few minutes or upgrade your OpenAI plan.
+  </Accordion>
+
+  <Accordion title="Insufficient quota">
+    Ensure your OpenAI account has available credits. Add payment method at OpenAI.
+  </Accordion>
+</AccordionGroup>
+
+### Environment Variable Not Loading
+
+From `/home/daytona/workspace/source/.env.example:35-38`:
+
+```bash .env.example
+# Voice Input (optional - uses OpenAI Whisper API)
+# Set this to enable voice-to-text for users without a paid subscription
+# Get your API key at https://platform.openai.com/api-keys
+# MAIN_VITE_OPENAI_API_KEY=sk-...
+```
+
+Ensure you:
+1. Use the `MAIN_VITE_` prefix for `.env.local` files
+2. Restart 1Code after changing environment
+3. Check that the file is in the correct location
+
+## Tips for Best Results
+
+<CardGroup cols={2}>
+  <Card title="Use a quality microphone" icon="microphone-stand">
+    Better audio quality = better transcription accuracy
+  </Card>
+  <Card title="Speak clearly and naturally" icon="comment">
+    Whisper is trained on natural speech, not robotic dictation
+  </Card>
+  <Card title="Minimize background noise" icon="volume-xmark">
+    Use a quiet environment or noise-canceling microphone
+  </Card>
+  <Card title="Specify language if needed" icon="language">
+    For non-English input, set the language for better accuracy
+  </Card>
+</CardGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Custom Models" icon="sliders" href="/advanced/custom-models">
+    Configure API keys and custom providers
+  </Card>
+  <Card title="Configuration" icon="gear" href="/advanced/configuration">
+    Learn about advanced configuration options
+  </Card>
+</CardGroup>

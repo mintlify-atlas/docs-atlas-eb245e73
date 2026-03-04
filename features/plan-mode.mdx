@@ -1,0 +1,352 @@
+---
+title: Plan Mode
+description: Structured planning with clarifying questions before code execution
+---
+
+Plan mode makes AI agents ask clarifying questions and create structured plans before writing code. This prevents wasted time on incorrect implementations and gives you control over the approach.
+
+## Why It Matters
+
+Without planning, agents often:
+- Make wrong assumptions about requirements
+- Pick suboptimal architectures
+- Miss edge cases
+- Implement features you didn't actually want
+
+Plan mode solves this by:
+- **Asking questions first** - Agent clarifies requirements before coding
+- **Showing the plan** - See the approach before execution
+- **Letting you approve** - Review and adjust before any code is written
+- **Saving time** - Avoid backtracking from wrong implementations
+
+## How It Works
+
+### Two-Phase Execution
+
+<Steps>
+  <Step title="Planning Phase">
+    Agent asks clarifying questions and creates a structured plan. No code is written yet.
+  </Step>
+  
+  <Step title="Execution Phase">
+    After you approve the plan, the agent implements it step-by-step.
+  </Step>
+</Steps>
+
+### Enabling Plan Mode
+
+**Per Chat:**
+1. Start a new chat
+2. Toggle "Plan Mode" in the header
+3. Send your prompt - agent enters planning phase
+
+**Globally:**
+1. Go to Settings → Agent Behavior
+2. Enable "Always use plan mode"
+3. All new chats will start in planning phase
+
+**Per Agent:**
+Custom agents can have plan mode enabled by default:
+```markdown
+---
+name: architecture-planner
+mode: plan
+---
+
+You are an expert at system design...
+```
+
+## Planning Phase
+
+### Clarifying Questions
+
+The agent identifies gaps in your prompt and asks targeted questions:
+
+<CodeGroup>
+```text Example Prompt
+Add user authentication to the app
+```
+
+```text Agent Questions
+1. What authentication method should I use? (JWT, sessions, OAuth)
+2. Should I add login/signup pages or just the backend?
+3. Do you want password reset functionality?
+4. Should existing users be migrated or is this a fresh feature?
+5. Any specific security requirements (2FA, rate limiting)?
+```
+</CodeGroup>
+
+You can:
+- Answer all questions at once
+- Answer individually (agent asks follow-ups)
+- Say "use your judgment" to let the agent decide
+
+### Structured Plan
+
+After clarification, the agent creates a markdown plan:
+
+```markdown
+# Plan: Add User Authentication
+
+## Approach
+Implement JWT-based authentication with login/signup pages.
+
+## Steps
+
+### 1. Backend Setup
+- Add `jsonwebtoken` and `bcrypt` dependencies
+- Create `User` model with email, password, createdAt fields
+- Add authentication middleware
+
+### 2. API Endpoints
+- `POST /auth/signup` - Create new user
+- `POST /auth/login` - Generate JWT token
+- `POST /auth/logout` - Invalidate token
+- `GET /auth/me` - Get current user
+
+### 3. Frontend Components
+- Create `LoginForm` component
+- Create `SignupForm` component
+- Add auth context for global state
+- Protect routes with `RequireAuth` wrapper
+
+### 4. Security
+- Hash passwords with bcrypt (10 rounds)
+- Set JWT expiry to 7 days
+- Add rate limiting on auth endpoints (5 requests/min)
+
+### 5. Testing
+- Unit tests for auth middleware
+- Integration tests for endpoints
+- E2E tests for login/signup flows
+
+## Files to Modify
+- `src/models/User.ts` (new)
+- `src/routes/auth.ts` (new)
+- `src/middleware/auth.ts` (new)
+- `src/components/LoginForm.tsx` (new)
+- `src/components/SignupForm.tsx` (new)
+- `package.json` (add dependencies)
+```
+
+The plan appears in the **Plan Widget** in the sidebar (`src/renderer/features/details-sidebar/sections/plan-widget.tsx:37`).
+
+### Reviewing the Plan
+
+You can:
+- **Approve** - Agent starts execution immediately
+- **Request changes** - "Add 2FA" or "Use OAuth instead of JWT"
+- **Reject** - "This approach won't work, try X instead"
+- **Ask questions** - "Why bcrypt over Argon2?"
+
+The agent revises the plan based on your feedback.
+
+## Execution Phase
+
+Once approved, the agent implements the plan step-by-step.
+
+### Step-by-Step Execution
+
+The agent:
+1. Shows which step it's working on
+2. Executes tools for that step
+3. Moves to the next step
+4. Reports completion or errors
+
+**Example output:**
+```
+✓ Step 1/5: Backend Setup
+  - Added dependencies: jsonwebtoken, bcrypt
+  - Created User model
+  
+⟳ Step 2/5: API Endpoints
+  - Creating auth routes...
+```
+
+### Plan Deviations
+
+If the agent needs to deviate from the plan:
+- It explains why
+- Proposes an alternative
+- Waits for your approval
+
+**Example:**
+```
+I encountered an issue with bcrypt on Windows. 
+Should I switch to Argon2 instead?
+```
+
+You can approve the change or suggest a different solution.
+
+### Plan Tracking
+
+The Plan Widget shows:
+- Total steps
+- Current step
+- Completed steps (with checkmarks)
+- Pending steps
+
+## Plan Mode with Codex
+
+Codex has native plan mode support with enhanced features:
+
+### Extended Planning
+
+Codex plans include:
+- **Architecture diagrams** (in markdown)
+- **Data flow descriptions**
+- **Error handling strategy**
+- **Performance considerations**
+
+### Interactive Planning
+
+During planning, you can:
+- Expand/collapse sections
+- Comment on specific steps
+- Reorder steps by dragging
+- Mark steps as "skip" or "priority"
+
+### Plan Exports
+
+Export plans as:
+- Markdown files
+- JIRA tickets (one per step)
+- Linear issues (one per step)
+- GitHub issues
+
+## Best Practices
+
+<Card title="Start Broad, Then Narrow" icon="funnel">
+  Give a high-level prompt first ("Add authentication"). Let the agent ask questions to narrow scope.
+</Card>
+
+<Card title="Review Plans Carefully" icon="eye">
+  Plans show the agent's assumptions. Catch misunderstandings early before code is written.
+</Card>
+
+<Card title="Iterate on Plans" icon="rotate">
+  Don't approve the first plan. Ask "What if we used X instead?" to explore alternatives.
+</Card>
+
+<Card title="Use Plan Mode for Big Changes" icon="boxes-stacked">
+  For small tasks ("fix typo"), plan mode adds overhead. Use regular mode instead.
+</Card>
+
+## Keyboard Shortcuts
+
+- `Cmd+Enter` - Approve plan and start execution
+- `Cmd+E` - Edit plan before approval
+- `Cmd+R` - Regenerate plan
+- `Escape` - Cancel planning phase
+
+## Example Workflows
+
+### Refactoring
+
+<CodeGroup>
+```text Prompt
+Refactor the payment processing code to use Stripe instead of PayPal
+```
+
+```text Agent Questions
+1. Should I migrate existing PayPal customers to Stripe?
+2. Do you want to keep PayPal as a fallback option?
+3. Should webhook handling be updated too?
+4. Any specific Stripe features to integrate (subscriptions, invoices)?
+```
+
+```markdown Plan
+# Plan: Migrate to Stripe
+
+## Steps
+1. Add Stripe SDK and remove PayPal SDK
+2. Update payment models to use Stripe's structure
+3. Migrate PayPal customers (create Stripe customer IDs)
+4. Update checkout flow to use Stripe Elements
+5. Update webhook handlers for Stripe events
+6. Test payment flows end-to-end
+7. Update documentation
+```
+</CodeGroup>
+
+### Feature Addition
+
+<CodeGroup>
+```text Prompt
+Add a comment system to blog posts
+```
+
+```text Agent Questions
+1. Should comments support threading (replies to replies)?
+2. Do you want markdown support in comments?
+3. Should there be moderation (approve before showing)?
+4. Any user authentication required or allow anonymous?
+5. Notification system for comment replies?
+```
+
+```markdown Plan
+# Plan: Comment System
+
+## Approach
+Two-level threading with markdown support, no moderation.
+
+## Steps
+1. Create Comment model (content, authorId, postId, parentId)
+2. Add comment API endpoints (create, read, update, delete)
+3. Build CommentThread component (recursive rendering)
+4. Add CommentForm with markdown preview
+5. Implement real-time updates with WebSocket
+6. Add email notifications for replies
+```
+</CodeGroup>
+
+## Limitations
+
+Plan mode doesn't work well for:
+- **Exploratory debugging** - "Fix this crash" is better in regular mode
+- **Trivial changes** - "Add a semicolon" doesn't need planning
+- **Iterative design** - UI tweaks benefit from fast iteration, not planning
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Agent skips planning phase">
+    **Cause:** Plan mode not enabled or prompt is too specific.
+    
+    **Fix:**
+    - Toggle "Plan Mode" in the chat header
+    - Use broader prompts ("Add feature X" not "Change line 42 to Y")
+  </Accordion>
+  
+  <Accordion title="Plan is too vague">
+    **Cause:** Agent doesn't have enough context.
+    
+    **Fix:**
+    - Answer clarifying questions in detail
+    - Provide file paths or existing code snippets
+    - Reference similar existing features
+  </Accordion>
+  
+  <Accordion title="Agent deviates from plan">
+    **Cause:** Plan became infeasible during execution.
+    
+    **Fix:**
+    - This is normal - approve deviations if they make sense
+    - Or stop execution and regenerate the plan
+  </Accordion>
+  
+  <Accordion title="Can't edit the plan">
+    **Cause:** Plan is locked after approval.
+    
+    **Fix:**
+    - Stop execution (Cmd+.)
+    - Click "Regenerate Plan"
+    - Make changes and approve again
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+- [Multi-Agent Support](/features/multi-agent-support) - Codex has best-in-class plan mode
+- [Visual UI](/features/visual-ui) - Review plans in markdown with syntax highlighting
+- [Background Agents](/features/background-agents) - Long plans can run in the background

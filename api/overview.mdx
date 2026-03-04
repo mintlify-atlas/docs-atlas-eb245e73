@@ -1,0 +1,70 @@
+---
+title: REST API Overview
+description: Run coding agents programmatically with the 1Code REST API
+---
+
+The 1Code REST API enables you to run coding agents programmatically. Point the API at a repository, provide a task, and the agent runs in an isolated cloud sandbox and delivers a pull request.
+
+## Key Features
+
+- **Remote Sandboxes** - Isolated cloud environment with repo cloned and dependencies installed
+- **Git & PR Integration** - Agent commits, pushes branches, and opens PRs automatically
+- **Async Execution** - Fire and forget, poll for status or get notified via webhooks
+- **Follow-up Messages** - Send additional instructions to a running task
+
+## Base URL
+
+```
+https://1code.dev/api/v1
+```
+
+## Authentication
+
+All API requests require authentication using an API key. See [Authentication](/api/authentication) for details.
+
+## Quick Example
+
+```bash
+curl -X POST https://1code.dev/api/v1/tasks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "repository": "https://github.com/your-org/your-repo",
+    "prompt": "Fix the failing CI tests"
+  }'
+```
+
+## Response Format
+
+All API responses are in JSON format. Successful responses return a `2xx` status code, while errors return `4xx` or `5xx` codes with an error message.
+
+```json
+{
+  "id": "task_abc123",
+  "status": "running",
+  "repository": "https://github.com/your-org/your-repo",
+  "prompt": "Fix the failing CI tests",
+  "created_at": "2026-03-04T10:00:00Z"
+}
+```
+
+## Rate Limits
+
+API requests are rate limited based on your subscription tier:
+
+- **Free**: 10 requests per hour
+- **Pro**: 100 requests per hour
+- **Max**: 1000 requests per hour
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Learn how to authenticate your API requests
+  </Card>
+  <Card title="Tasks" icon="robot" href="/api/tasks">
+    Create and manage agent tasks
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api/webhooks">
+    Get notified when tasks complete
+  </Card>
+</CardGroup>

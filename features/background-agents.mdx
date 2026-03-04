@@ -1,0 +1,311 @@
+---
+title: Background Agents
+description: Cloud sandboxes that continue running when your laptop is closed
+---
+
+Background agents run in isolated cloud sandboxes, continuing their work even when you close your laptop or shut down your computer.
+
+## Why It Matters
+
+Local agents stop when you:
+- Close your laptop
+- Lose internet connection
+- Restart your computer
+- Run out of battery
+
+For long-running tasks like:
+- Large refactorings (30+ minutes)
+- Full test suite runs
+- Database migrations
+- Multi-step deployments
+
+...local execution is unreliable. Background agents solve this by moving execution to the cloud.
+
+## How It Works
+
+### Cloud Sandboxes
+
+When you start a background agent:
+1. Your repository is cloned to a cloud sandbox
+2. Dependencies are installed automatically
+3. The agent starts executing in the sandbox
+4. You can close 1Code - the agent keeps running
+5. Reconnect anytime to see progress
+
+**Under the hood:**
+- Sandboxes run on CodeSandbox infrastructure
+- Each sandbox is a full Linux environment
+- Git state is preserved (commits, branches, etc.)
+- Results are synced back to your local machine
+
+**Implementation:** Background agents are orchestrated via the sandbox import router (`src/main/lib/trpc/routers/sandbox-import.ts:110`), which handles cloning, execution, and syncing.
+
+### Execution Model
+
+<Steps>
+  <Step title="Start Background Task">
+    Click "Run in Background" when starting a chat. 1Code clones your repo to a cloud sandbox.
+  </Step>
+  
+  <Step title="Agent Executes">
+    The agent runs in the sandbox with full access to git, package managers, and tools.
+  </Step>
+  
+  <Step title="Monitor Progress">
+    View live output in the app or on mobile via PWA. See commits, file changes, and tool execution.
+  </Step>
+  
+  <Step title="Sync Results">
+    When complete, changes are synced back. Review diffs and merge to your local branch.
+  </Step>
+</Steps>
+
+## Starting a Background Agent
+
+### From the UI
+
+<Tabs>
+  <Tab title="New Chat">
+    1. Click "New Chat"
+    2. Toggle "Run in background"
+    3. Enter your prompt
+    4. Click "Send" - sandbox is created automatically
+  </Tab>
+  
+  <Tab title="Existing Chat">
+    1. Open any local chat
+    2. Click "Move to Background" in the menu
+    3. Confirm - your chat is transferred to a sandbox
+  </Tab>
+</Tabs>
+
+### From the API
+
+Run background agents programmatically:
+
+```bash
+curl -X POST https://1code.dev/api/v1/tasks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "repository": "https://github.com/your-org/your-repo",
+    "prompt": "Add user authentication with JWT"
+  }'
+```
+
+Response:
+```json
+{
+  "taskId": "task_abc123",
+  "status": "running",
+  "sandboxId": "sandbox_def456",
+  "url": "https://1code.dev/tasks/task_abc123"
+}
+```
+
+Poll for status:
+```bash
+curl https://1code.dev/api/v1/tasks/task_abc123 \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## Monitoring Background Agents
+
+### In the Desktop App
+
+**Active Tasks Panel:**
+- Shows all running background agents
+- Real-time progress updates
+- Click to view full output
+
+**Live Output Stream:**
+- Tool execution (bash, edit, grep)
+- Git operations (commit, push, branch)
+- Error messages and warnings
+
+### On Mobile (PWA)
+
+Access background agents from your phone:
+1. Open https://1code.dev on mobile
+2. Sign in with your account
+3. View active tasks in the sidebar
+4. Tap to see live output
+
+<Info>
+  The PWA is read-only. You can monitor progress but can't send new prompts from mobile.
+</Info>
+
+### Email Notifications
+
+Get notified when background tasks complete:
+1. Go to Settings → Notifications
+2. Enable "Background task completion"
+3. Add your email
+
+You'll receive:
+- Task completion status (success/failure)
+- Summary of changes made
+- Link to view results in the app
+
+## Syncing Changes Back
+
+When a background task completes, sync the results:
+
+**Automatic Sync:**
+- If you're online, changes sync immediately
+- Git state (commits, branches) is applied to your local repo
+- File changes appear in the diff sidebar
+
+**Manual Sync:**
+1. Click "Sync Now" in the task panel
+2. Review changes in the diff view
+3. Choose what to apply:
+   - All commits
+   - Specific files
+   - Individual hunks
+
+**Implementation:** The sandbox import process (`src/main/lib/trpc/routers/sandbox-import.ts:193`) exports git state from the sandbox and applies it to a local worktree.
+
+## Live Browser Previews
+
+Background agents can run dev servers and expose them via public URLs.
+
+### How It Works
+
+1. Agent starts a dev server (e.g., `npm run dev`)
+2. 1Code detects the port and creates a public URL
+3. Click the link to preview the app in your browser
+4. Changes update in real-time as the agent works
+
+**Example:**
+```bash
+# Agent runs this in the sandbox
+npm run dev
+
+# 1Code exposes it at:
+https://sandbox-def456.1code.dev
+```
+
+### Supported Frameworks
+
+- Next.js, React, Vue, Svelte, Angular
+- Express, Fastify, Koa
+- Rails, Django, Flask
+- Any server on ports 3000-9000
+
+### Security
+
+Public URLs are:
+- **Temporary:** Deleted when the task completes
+- **Unique:** Random subdomain prevents guessing
+- **Read-only:** No authentication required, but no write access
+
+<Warning>
+  Don't expose production data or API keys in background previews. They're publicly accessible.
+</Warning>
+
+## Cost & Limits
+
+### Pricing
+
+Background agents require a subscription:
+- **Pro:** 100 hours/month of sandbox time
+- **Max:** Unlimited sandbox hours
+
+See [pricing](https://1code.dev/pricing) for details.
+
+### Resource Limits
+
+**Per Sandbox:**
+- 4 CPU cores
+- 8 GB RAM
+- 20 GB disk space
+- 12-hour max runtime
+
+**Concurrency:**
+- Pro: 3 parallel sandboxes
+- Max: 10 parallel sandboxes
+
+If you hit these limits, tasks queue automatically.
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Overnight Refactoring" icon="moon">
+    Start a large refactor before bed. Wake up to a completed PR ready for review.
+  </Card>
+  
+  <Card title="CI/CD Integration" icon="gear">
+    Trigger background agents from GitHub Actions on failed CI runs.
+  </Card>
+  
+  <Card title="Mobile Workflow" icon="mobile">
+    Start a task from your phone. Check progress during your commute.
+  </Card>
+  
+  <Card title="Team Collaboration" icon="users">
+    Share a background task URL with teammates to watch progress together.
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<Card title="Use for Long Tasks Only" icon="clock">
+  Background agents add latency (cloning, syncing). For quick tasks (< 5 min), use local mode.
+</Card>
+
+<Card title="Monitor Progress" icon="eye">
+  Check in periodically to ensure the agent isn't stuck or looping.
+</Card>
+
+<Card title="Review Before Merging" icon="code-compare">
+  Always review synced changes in the diff view before merging to main.
+</Card>
+
+<Card title="Set Timeouts" icon="timer">
+  Configure max runtime in Settings to avoid runaway tasks consuming resources.
+</Card>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Sandbox failed to start">
+    **Cause:** Repository is private or too large.
+    
+    **Fix:**
+    - Ensure 1Code has access to your repo (check GitHub permissions)
+    - For large repos (> 5 GB), use shallow clones in settings
+  </Accordion>
+  
+  <Accordion title="Changes not syncing back">
+    **Cause:** Network issues or conflicts with local state.
+    
+    **Fix:**
+    - Check your internet connection
+    - Try manual sync from the task panel
+    - If conflicts exist, resolve them in the diff view
+  </Accordion>
+  
+  <Accordion title="Agent stuck/looping">
+    **Cause:** Infinite loop in the agent's execution.
+    
+    **Fix:**
+    - Click "Stop" in the task panel
+    - Review the last few tool executions to identify the loop
+    - Adjust your prompt to be more specific
+  </Accordion>
+  
+  <Accordion title="Preview URL not loading">
+    **Cause:** Dev server failed to start or wrong port.
+    
+    **Fix:**
+    - Check sandbox logs for server errors
+    - Ensure server binds to `0.0.0.0` (not `localhost`)
+    - Try a different port if default is blocked
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+- [Worktree Isolation](/features/worktree-isolation) - Background tasks use the same isolation model
+- [Visual UI](/features/visual-ui) - Monitor background agents with real-time tool execution
+- [Automations](https://1code.dev/agents/async) - Trigger background agents from external events

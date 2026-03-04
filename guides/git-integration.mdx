@@ -1,0 +1,678 @@
+---
+title: "Git Integration"
+description: "Using the built-in git client for commits, branches, pull requests, and more"
+---
+
+## Overview
+
+1Code includes a full-featured git client built into the interface. No need to switch to your terminal for:
+
+- Viewing diffs and file changes
+- Staging and committing
+- Creating and switching branches
+- Pushing and pulling
+- Creating pull requests
+- Viewing commit history
+
+All git operations are integrated with the agent workflow, so you can review changes before committing and track what the agent has done.
+
+## The Git Panel
+
+Access the git panel from any active chat:
+
+**Location**: Right sidebar > **Git** tab (or click the branch icon in the header)
+
+**Sections**:
+1. **Current branch**: Shows active branch with status indicators
+2. **Changes**: Unstaged and staged files with diffs
+3. **Commit**: Commit message input and history
+4. **Remote**: Push/pull/sync operations
+5. **Branches**: List of local and remote branches
+
+## Viewing Changes
+
+### File Change List
+
+The changes section shows all modified files:
+
+- **Modified** (yellow M): Existing file changed
+- **Added** (green A): New file created
+- **Deleted** (red D): File removed
+- **Renamed** (blue R): File moved/renamed
+- **Untracked** (gray ?): New file not yet staged
+
+**File counts**: Header shows `X changed, Y added, Z deleted`
+
+### Viewing Diffs
+
+Click any file to see a side-by-side diff:
+
+- **Left pane**: Original content (before changes)
+- **Right pane**: Modified content (after changes)
+- **Highlighting**: Red for removed lines, green for added lines
+- **Line numbers**: Click to reference specific lines
+
+**Diff options:**
+- Toggle between unified and split view
+- Show/hide whitespace changes
+- Word diff for finer granularity
+
+### Inline Diffs
+
+Agent messages show inline diffs for files they modify:
+
+```diff
+- const oldValue = "foo";
++ const newValue = "bar";
+  const unchanged = "baz";
+```
+
+Click **View Full Diff** to see the complete file comparison.
+
+## Staging and Committing
+
+### Staging Files
+
+<Steps>
+  <Step title="Review changes">
+    Look through modified files in the git panel.
+  </Step>
+
+  <Step title="Stage files">
+    Stage individual files or all at once:
+    
+    **Individual**: Click the `+` icon next to a file
+    **All**: Click **Stage All** button
+    **Selective**: Click file > Select lines > **Stage Selected Lines**
+  </Step>
+
+  <Step title="Unstage if needed">
+    Click the `-` icon next to staged files to unstage them.
+  </Step>
+</Steps>
+
+**Keyboard shortcuts:**
+- `S`: Stage current file
+- `U`: Unstage current file
+- `Cmd+A` then `S`: Stage all files
+
+### Writing Commit Messages
+
+Good commit messages help track changes:
+
+**Format**:
+```
+Brief summary (50 chars or less)
+
+More detailed explanation if needed:
+- What changed
+- Why it changed
+- Any breaking changes or notes
+
+Refs: #123
+```
+
+**Examples:**
+```
+✅ Good:
+Add user authentication with JWT tokens
+
+Implements login/logout endpoints and middleware
+for protecting routes. Uses bcrypt for hashing.
+
+❌ Bad:
+Update files
+Fixed stuff
+WIP
+```
+
+<Tip>
+The agent often generates commit messages automatically. You can edit them before committing.
+</Tip>
+
+### Creating Commits
+
+<Steps>
+  <Step title="Stage files">
+    Make sure the files you want to commit are staged (green checkmark).
+  </Step>
+
+  <Step title="Write message">
+    Enter a commit message in the input field.
+  </Step>
+
+  <Step title="Commit">
+    Click **Commit** or press `Cmd+Enter`.
+  </Step>
+
+  <Step title="Verify">
+    The commit appears in history with a hash and timestamp.
+  </Step>
+</Steps>
+
+**Atomic commits**: You can also select specific files and click **Commit Selected** to commit only those files.
+
+## Working with Branches
+
+### Viewing Branches
+
+The branches section shows:
+
+**Current branch**: Highlighted with a checkmark
+
+**Local branches**: Branches on your machine
+- Last commit date
+- Ahead/behind indicators (vs. remote)
+- Checked out in worktree indicator
+
+**Remote branches**: Branches on GitHub/GitLab
+- Latest commit info
+- PR status if applicable
+
+### Creating Branches
+
+<Steps>
+  <Step title="Open branch dialog">
+    Click **New Branch** in the git panel or the branch selector in the header.
+  </Step>
+
+  <Step title="Enter name">
+    Follow naming conventions:
+    - `feature/add-user-auth`
+    - `fix/memory-leak`
+    - `refactor/simplify-api`
+  </Step>
+
+  <Step title="Choose base branch">
+    Select which branch to start from (usually `main` or `master`).
+  </Step>
+
+  <Step title="Create">
+    Click **Create** to make the branch and switch to it.
+  </Step>
+</Steps>
+
+**Validation**: 1Code checks for:
+- Valid characters (alphanumeric, dash, slash, underscore)
+- No double dots or consecutive slashes
+- Unique name (not already existing)
+
+### Switching Branches
+
+<Steps>
+  <Step title="Safety check">
+    1Code verifies you have no uncommitted changes.
+    
+    If you do:
+    - **Commit** your changes first
+    - **Stash** them: `git stash push -m "WIP"`
+    - **Discard** them (if you're sure)
+  </Step>
+
+  <Step title="Select branch">
+    Click the branch name in the git panel or use the branch selector dropdown.
+  </Step>
+
+  <Step title="Switch">
+    1Code checks out the branch:
+    - Working directory updates
+    - Files change to match branch state
+    - Agent context updates
+  </Step>
+</Steps>
+
+**Quick switch**: Press `Cmd+P` > type branch name > Enter
+
+### Deleting Branches
+
+<Steps>
+  <Step title="Select branch">
+    Right-click the branch you want to delete in the branches list.
+  </Step>
+
+  <Step title="Delete options">
+    Choose:
+    - **Delete local**: Remove branch from your machine only
+    - **Delete local and remote**: Also delete from GitHub/origin
+  </Step>
+
+  <Step title="Force delete (if needed)">
+    If branch has unmerged changes, you'll be asked to confirm force delete.
+  </Step>
+</Steps>
+
+**Safety**: You cannot delete:
+- The current branch
+- Branches checked out in other worktrees
+- Protected branches (main, master) without confirmation
+
+## Remote Operations
+
+### Pushing Changes
+
+<Steps>
+  <Step title="Commit first">
+    Make sure your changes are committed.
+  </Step>
+
+  <Step title="Click push">
+    In the git panel, click **Push** button.
+    
+    If this is your first push on this branch:
+    - Branch is created on remote
+    - Upstream tracking is set automatically
+    - Future pushes are faster
+  </Step>
+
+  <Step title="Verify">
+    Status changes to "Up to date with origin".
+  </Step>
+</Steps>
+
+**Push indicators**:
+- **↑3**: 3 commits ahead (need to push)
+- **↓2**: 2 commits behind (need to pull)
+- **↑3 ↓2**: Diverged (need to pull/rebase first)
+
+### Pulling Changes
+
+<Steps>
+  <Step title="Check for updates">
+    Click **Fetch** to check for new commits without pulling.
+  </Step>
+
+  <Step title="Review incoming changes">
+    See what commits will be pulled in the remote section.
+  </Step>
+
+  <Step title="Pull">
+    Click **Pull** button.
+    
+    1Code uses `git pull --rebase` by default to keep history clean.
+  </Step>
+
+  <Step title="Handle conflicts (if any)">
+    If conflicts occur:
+    - Conflict markers appear in files
+    - Resolve manually or click **Abort Rebase**
+    - After resolving, click **Continue Rebase**
+  </Step>
+</Steps>
+
+**Auto-stash**: Enable in settings to automatically stash uncommitted changes before pulling.
+
+### Syncing (Pull + Push)
+
+Click **Sync** to pull and then push in one operation:
+
+1. Fetches latest from remote
+2. Rebases your commits on top
+3. Pushes your commits to remote
+4. Updates tracking information
+
+**Use cases**:
+- Keeping feature branches up-to-date with main
+- Quick sync when collaborating
+- Before creating a PR
+
+### Force Push
+
+<Warning>
+Force pushing rewrites remote history. Only use when necessary and when you're sure no one else is using the branch.
+</Warning>
+
+**When to force push**:
+- After amending a commit that was already pushed
+- After rebasing a feature branch
+- When you need to undo pushed commits
+
+**How to force push**:
+1. Hold `Shift` while clicking **Push**
+2. Confirm the force push dialog
+3. 1Code uses `--force-with-lease` for safety
+
+**Protected branches**: Force push is blocked on `main`, `master`, `production` unless you explicitly confirm.
+
+## Creating Pull Requests
+
+<Steps>
+  <Step title="Push your branch">
+    Make sure all commits are pushed to remote.
+  </Step>
+
+  <Step title="Open PR dialog">
+    Click **Create PR** in the git panel.
+  </Step>
+
+  <Step title="PR Details (auto-filled)">
+    1Code pre-fills based on your commits:
+    
+    **Title**: Based on commit messages or branch name
+    
+    **Description**: Includes:
+    - Summary of changes
+    - List of commits
+    - Files changed
+    - Test results (if available)
+  </Step>
+
+  <Step title="Choose base branch">
+    Select the branch to merge into (usually `main`).
+  </Step>
+
+  <Step title="Add reviewers (optional)">
+    Select team members to review.
+  </Step>
+
+  <Step title="Create">
+    Click **Create Pull Request**.
+    
+    Opens GitHub PR page in browser where you can finalize and submit.
+  </Step>
+</Steps>
+
+**PR templates**: If your repo has a `.github/pull_request_template.md`, it's automatically included.
+
+### PR Status in 1Code
+
+Once a PR exists, the git panel shows:
+- **PR number** and status (open, merged, closed)
+- **Review status**: Approved, changes requested, pending
+- **CI status**: Passing, failing, in progress
+- **Merge conflicts**: If any exist
+- **Quick actions**: View on GitHub, update branch, merge
+
+## Commit History
+
+View past commits in the history section:
+
+**Information shown**:
+- Commit hash (short and full)
+- Commit message
+- Author and timestamp
+- Tags (if any)
+- Branch indicators
+
+**Actions**:
+- Click to view full diff
+- Copy hash for referencing
+- Revert commit (creates inverse commit)
+- Cherry-pick to another branch
+
+**Filtering**:
+- Search by message or hash
+- Filter by author
+- Date range
+- Branch-specific history
+
+## Advanced Git Operations
+
+### Stashing Changes
+
+Temporarily save uncommitted changes:
+
+**Create stash**:
+1. Click **Stash** button
+2. Enter optional message: "WIP: adding feature X"
+3. Changes are saved and working directory is clean
+
+**Apply stash**:
+1. Click **Stashes** to see list
+2. Click stash to preview
+3. **Apply**: Restore without deleting stash
+4. **Pop**: Restore and delete stash
+
+**Use cases**:
+- Switching branches with WIP code
+- Quick experiments without committing
+- Temporarily removing changes to test something
+
+### Rebasing
+
+Reapply commits on top of another branch:
+
+**Interactive rebase**:
+1. Right-click a commit
+2. Select **Rebase from here**
+3. Choose operations:
+   - **Pick**: Keep commit as-is
+   - **Reword**: Change message
+   - **Edit**: Modify content
+   - **Squash**: Combine with previous
+   - **Drop**: Remove commit
+4. Complete rebase
+
+**Common uses**:
+- Clean up commit history before PR
+- Squash WIP commits into logical units
+- Update feature branch with main
+
+**Example**:
+```
+Before rebase:
+- Add feature (WIP)
+- Fix typo
+- Another fix
+- Done!
+
+After squash rebase:
+- Add user authentication feature
+```
+
+### Cherry-picking
+
+Apply specific commits to current branch:
+
+1. Find commit in history
+2. Right-click > **Cherry-pick**
+3. Commit is applied to current branch
+4. Resolve conflicts if any
+5. Complete cherry-pick
+
+**Use cases**:
+- Port bug fix from one branch to another
+- Include specific feature without merging entire branch
+- Recover commits from abandoned branches
+
+### Merge vs Rebase
+
+| Operation | Merge | Rebase |
+|-----------|-------|--------|
+| **History** | Preserves complete history | Rewrites history |
+| **Graph** | Creates merge commits | Linear history |
+| **Conflicts** | Once, at merge time | Per commit being rebased |
+| **Safety** | Non-destructive | Rewrites commits |
+| **Use for** | Feature branches → main | Feature branches update |
+
+**1Code default**: Rebase for pulls, merge for PRs.
+
+## Git Configuration
+
+Customize git behavior in **Settings** > **Git**:
+
+### User Information
+
+```
+Name: Your Name
+Email: you@example.com
+```
+
+Used for commit attribution. Auto-detected from your global git config.
+
+### Signing Commits
+
+Enable GPG commit signing:
+
+1. Generate GPG key: `gpg --gen-key`
+2. Add to GitHub: Settings > SSH and GPG keys
+3. Configure in 1Code: Settings > Git > Enable Signing
+4. All commits are now signed with your key
+
+**Verified badge** appears on signed commits in GitHub.
+
+### Auto-fetch
+
+Automatically fetch from remote:
+- **Never**: Manual fetch only
+- **Every 5 minutes**: Keep branches up-to-date
+- **On focus**: When you switch to 1Code
+
+### Default Behavior
+
+- **Auto-stash on pull**: Stash uncommitted changes automatically
+- **Prune on fetch**: Remove deleted remote branches
+- **Fast-forward only**: Prevent merge commits on pull
+- **Sign commits**: Require GPG signature
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Can't switch branches - uncommitted changes">
+    **Solution**:
+    ```bash
+    # Option 1: Commit changes
+    git add .
+    git commit -m "WIP: in progress work"
+    
+    # Option 2: Stash changes
+    git stash push -m "WIP"
+    # Later: git stash pop
+    
+    # Option 3: Discard changes (careful!)
+    git reset --hard
+    ```
+  </Accordion>
+  
+  <Accordion title="Push rejected - remote has changes">
+    **Cause**: Someone else pushed to the branch.
+    
+    **Solution**:
+    1. Click **Pull** to get their changes
+    2. Resolve any conflicts
+    3. Push again
+    
+    Or use **Sync** to pull and push in one step.
+  </Accordion>
+  
+  <Accordion title="Merge conflict after pull">
+    **Solution**:
+    1. Open conflicted files (marked with ⚠️)
+    2. Look for conflict markers:
+       ```
+       <<<<<<< HEAD
+       Your changes
+       =======
+       Their changes
+       >>>>>>> branch-name
+       ```
+    3. Edit to keep the correct version
+    4. Remove conflict markers
+    5. Stage resolved files
+    6. Click **Continue Rebase** or commit
+  </Accordion>
+  
+  <Accordion title="Rebase failed - can't continue">
+    **Solution**:
+    1. Try to resolve conflicts as above
+    2. If stuck, click **Abort Rebase**
+    3. Everything returns to state before rebase
+    4. Try merging instead of rebasing
+  </Accordion>
+  
+  <Accordion title="Accidentally committed to wrong branch">
+    **Solution**:
+    ```bash
+    # Undo commit but keep changes
+    git reset HEAD~1
+    
+    # Switch to correct branch
+    git checkout correct-branch
+    
+    # Commit again
+    git add .
+    git commit -m "Your message"
+    ```
+    
+    Or use the **Revert** button in commit history.
+  </Accordion>
+  
+  <Accordion title="Lost commits after rebase">
+    **Recovery**:
+    ```bash
+    # Find lost commit hash
+    git reflog
+    
+    # Look for your commit
+    # Example output:
+    # abc1234 HEAD@{1}: commit: Your lost commit
+    
+    # Cherry-pick it back
+    git cherry-pick abc1234
+    ```
+    
+    Reflog keeps commits for 30 days by default.
+  </Accordion>
+</AccordionGroup>
+
+## Git Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Commit Often" icon="clock">
+    Make small, frequent commits rather than large, infrequent ones. Easier to review and roll back if needed.
+  </Card>
+  
+  <Card title="Descriptive Messages" icon="message">
+    Write clear commit messages explaining why, not just what. Future you will be grateful.
+  </Card>
+  
+  <Card title="Pull Before Push" icon="arrows-rotate">
+    Always pull (or sync) before pushing to avoid conflicts and rejected pushes.
+  </Card>
+  
+  <Card title="Review Diffs" icon="code-compare">
+    Always review diffs before committing. Catch accidental changes or debug output.
+  </Card>
+  
+  <Card title="Branch Naming" icon="code-branch">
+    Use consistent naming: `feature/`, `fix/`, `refactor/`. Makes navigation and automation easier.
+  </Card>
+  
+  <Card title="Clean History" icon="broom">
+    Squash WIP commits before merging. Keep main branch history readable.
+  </Card>
+</CardGroup>
+
+## Keyboard Shortcuts
+
+| Action | Shortcut |
+|--------|----------|
+| Stage file | `S` |
+| Unstage file | `U` |
+| Commit | `Cmd+Enter` |
+| Push | `Cmd+Shift+P` |
+| Pull | `Cmd+Shift+L` |
+| Sync | `Cmd+Shift+S` |
+| View diff | `D` |
+| Switch branch | `Cmd+B` |
+| Create branch | `Cmd+Shift+B` |
+| Git panel | `Cmd+G` |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Worktrees" icon="code-branch" href="/guides/working-with-worktrees">
+    Learn how worktrees enable isolated development with built-in git support.
+  </Card>
+  
+  <Card title="Automations" icon="bolt" href="/guides/automations">
+    Trigger agents from git events like pushes, PR creation, or CI failures.
+  </Card>
+  
+  <Card title="Background Agents" icon="cloud" href="/guides/using-background-agents">
+    Background agents commit and push changes automatically as they work.
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/advanced/configuration">
+    Customize git behavior, signing, and integration settings.
+  </Card>
+</CardGroup>

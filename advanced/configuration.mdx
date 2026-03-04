@@ -1,0 +1,381 @@
+---
+title: 'Advanced Configuration'
+description: 'Environment variables, config files, and advanced settings for 1Code'
+icon: 'gear'
+---
+
+1Code can be configured through environment variables, config files, and UI settings to customize behavior for your workflow.
+
+## Configuration Sources
+
+1Code loads configuration from multiple sources in priority order:
+
+1. **UI Settings** (highest priority) - Settings panel in the app
+2. **Environment variables** - Shell profile or `.env.local` files
+3. **Config files** - `.claude/` directory configs
+4. **Default values** (lowest priority) - Built-in defaults
+
+## Environment Variables
+
+### Development & Build
+
+<ParamField path="ELECTRON_RENDERER_URL" type="string">
+  Development server URL. Automatically set by `electron-vite` during development.
+  
+  Example: `http://localhost:5173`
+</ParamField>
+
+<ParamField path="MAIN_VITE_API_URL" type="string" default="https://21st.dev">
+  API base URL for backend services. Override for local development.
+  
+  Example: `http://localhost:3000`
+</ParamField>
+
+### Authentication & API Keys
+
+<ParamField path="ANTHROPIC_API_KEY" type="string">
+  Anthropic API key for Claude models. Used by Claude CLI for custom configurations.
+  
+  <Note>
+  In development mode, this is stripped to allow OAuth testing. In production, it's preserved for CLI compatibility.
+  </Note>
+  
+  Example: `sk-ant-api03-...`
+</ParamField>
+
+<ParamField path="ANTHROPIC_AUTH_TOKEN" type="string">
+  Alternative to `ANTHROPIC_API_KEY`. Used for OAuth tokens.
+  
+  Example: `oauth_token_...`
+</ParamField>
+
+<ParamField path="ANTHROPIC_BASE_URL" type="string">
+  Custom base URL for Anthropic API. Use for proxies or alternative endpoints.
+  
+  Example: `https://api.anthropic.com`
+</ParamField>
+
+<ParamField path="OPENAI_API_KEY" type="string">
+  OpenAI API key for voice transcription (Whisper API).
+  
+  Use `MAIN_VITE_OPENAI_API_KEY` for `.env.local` files.
+  
+  Example: `sk-...`
+</ParamField>
+
+<ParamField path="MAIN_VITE_OPENAI_API_KEY" type="string">
+  OpenAI API key for voice transcription. Vite-compatible format for `.env.local`.
+  
+  Example: `sk-...`
+</ParamField>
+
+### Analytics & Monitoring
+
+<ParamField path="MAIN_VITE_SENTRY_DSN" type="string">
+  Sentry DSN for error tracking (optional).
+  
+  Example: `https://xxxxx@xxx.ingest.sentry.io/xxxxx`
+</ParamField>
+
+<ParamField path="MAIN_VITE_POSTHOG_KEY" type="string">
+  PostHog project key for analytics (optional, main process).
+  
+  Example: `phc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+</ParamField>
+
+<ParamField path="MAIN_VITE_POSTHOG_HOST" type="string" default="https://us.i.posthog.com">
+  PostHog API host (optional, main process).
+</ParamField>
+
+<ParamField path="VITE_POSTHOG_KEY" type="string">
+  PostHog project key for analytics (optional, renderer process).
+</ParamField>
+
+<ParamField path="VITE_POSTHOG_HOST" type="string" default="https://us.i.posthog.com">
+  PostHog API host (optional, renderer process).
+</ParamField>
+
+<ParamField path="FORCE_ANALYTICS" type="string" default="false">
+  Force enable analytics in development. Set to `"true"` to enable.
+</ParamField>
+
+### Debugging
+
+<ParamField path="CLAUDE_RAW_LOG" type="string" default="0">
+  Enable raw Claude CLI output logging. Set to `"1"` to enable.
+  
+  Automatically enabled in development (unpackaged) builds.
+</ParamField>
+
+<ParamField path="NODE_ENV" type="string" default="production">
+  Node environment. Set to `"development"` for development mode.
+</ParamField>
+
+### Platform-Specific
+
+<ParamField path="SHELL" type="string">
+  Default shell path. Used for environment loading.
+  
+  Examples:
+  - macOS: `/bin/zsh`
+  - Linux: `/bin/bash`
+  - Windows: Uses `COMSPEC` instead
+</ParamField>
+
+<ParamField path="PATH" type="string">
+  System PATH for executable discovery. Extended with common tool locations.
+</ParamField>
+
+## Configuration Files
+
+### Project Config: .claude/
+
+Project-specific configuration stored in `.claude/` directory:
+
+```
+my-project/
+  └── .claude/
+      ├── skills/           # Project-specific skills
+      ├── worktree.json    # Worktree setup commands
+      └── mcp-servers.json # MCP server configuration
+```
+
+### User Config: ~/.claude/
+
+User-wide configuration in home directory:
+
+```
+~/.claude/
+  ├── skills/          # Global skills available in all projects
+  ├── plugins/         # Installed plugins
+  └── settings.json    # User preferences (managed by app)
+```
+
+### Worktree Configuration
+
+Define setup commands for worktrees in `.1code/worktree.json`:
+
+```json .1code/worktree.json
+{
+  "setup-worktree": [
+    "bun install",
+    "cp $ROOT_WORKTREE_PATH/.env .env",
+    "cp $ROOT_WORKTREE_PATH/.env.local .env.local"
+  ]
+}
+```
+
+<ParamField path="setup-worktree" type="string[]">
+  Array of shell commands to run when setting up a new worktree.
+  
+  Use `$ROOT_WORKTREE_PATH` to reference the main repo directory.
+</ParamField>
+
+### MCP Server Configuration
+
+MCP servers can be configured globally or per-project:
+
+```json ~/.claude/mcp-servers.json
+{
+  "my-server": {
+    "command": "npx",
+    "args": ["-y", "my-mcp-server"],
+    "env": {
+      "API_KEY": "..."
+    }
+  }
+}
+```
+
+## Environment Variable Files
+
+### .env.local (Recommended)
+
+Create `.env.local` in the project root for local development:
+
+```bash .env.local
+# Main process env vars (use MAIN_VITE_ prefix)
+MAIN_VITE_API_URL=http://localhost:3000
+MAIN_VITE_OPENAI_API_KEY=sk-...
+MAIN_VITE_SENTRY_DSN=https://...
+
+# Renderer process env vars (use VITE_ prefix)
+VITE_POSTHOG_KEY=phc_...
+VITE_POSTHOG_HOST=https://us.i.posthog.com
+```
+
+<Warning>
+Add `.env.local` to `.gitignore` to prevent committing secrets.
+</Warning>
+
+### Shell Profile
+
+Add environment variables to your shell profile for global availability:
+
+```bash ~/.zshrc
+# 1Code Configuration
+export ANTHROPIC_API_KEY="sk-ant-api03-..."
+export ANTHROPIC_BASE_URL="https://api.anthropic.com"
+export OPENAI_API_KEY="sk-..."
+
+# Optional: Custom API endpoint
+export MAIN_VITE_API_URL="http://localhost:3000"
+```
+
+Restart your terminal or run `source ~/.zshrc` to apply changes.
+
+## Configuration Examples
+
+### Development Setup
+
+```bash .env.local
+# Use local backend
+MAIN_VITE_API_URL=http://localhost:3000
+
+# Enable analytics in dev
+FORCE_ANALYTICS=true
+
+# Enable raw logging
+CLAUDE_RAW_LOG=1
+
+# Voice transcription
+MAIN_VITE_OPENAI_API_KEY=sk-...
+```
+
+### Custom API Proxy
+
+```bash ~/.zshrc
+# Use corporate proxy
+export ANTHROPIC_BASE_URL="https://api-proxy.company.com"
+export ANTHROPIC_API_KEY="company-key-..."
+```
+
+### Offline Development
+
+For offline development with Ollama:
+
+1. Install Ollama: [ollama.ai](https://ollama.ai)
+2. Pull a model: `ollama pull qwen2.5-coder:7b`
+3. Configure in Settings → Models → Ollama
+
+No environment variables needed - 1Code auto-detects Ollama at `http://localhost:11434`.
+
+### Multi-Environment
+
+Use shell aliases for different configurations:
+
+```bash ~/.zshrc
+# Production
+alias 1code-prod='MAIN_VITE_API_URL=https://21st.dev /Applications/1Code.app/Contents/MacOS/1Code'
+
+# Staging
+alias 1code-staging='MAIN_VITE_API_URL=https://staging.21st.dev /Applications/1Code.app/Contents/MacOS/1Code'
+
+# Local dev
+alias 1code-local='MAIN_VITE_API_URL=http://localhost:3000 /Applications/1Code.app/Contents/MacOS/1Code'
+```
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Never commit secrets" icon="lock">
+    Add `.env.local`, `.env`, and any files with secrets to `.gitignore`.
+    
+    ```bash .gitignore
+    .env
+    .env.local
+    .env.*.local
+    ```
+  </Accordion>
+
+  <Accordion title="Use encrypted storage" icon="shield">
+    When possible, use UI settings instead of environment variables. The app encrypts sensitive data using Electron `safeStorage`.
+  </Accordion>
+
+  <Accordion title="Rotate keys regularly" icon="arrows-rotate">
+    Rotate API keys every 90 days:
+    1. Generate new key from provider
+    2. Update in 1Code settings/environment
+    3. Revoke old key
+  </Accordion>
+
+  <Accordion title="Use separate keys per environment" icon="key">
+    Use different API keys for development, staging, and production to limit blast radius of compromised keys.
+  </Accordion>
+
+  <Accordion title="Restrict key permissions" icon="user-lock">
+    When possible, create API keys with minimal required permissions. Avoid using admin or root keys.
+  </Accordion>
+</AccordionGroup>
+
+## Environment Loading
+
+From `/home/daytona/workspace/source/src/main/lib/claude/env.ts:13-34`:
+
+```typescript
+// Keys to strip (prevent interference from unrelated providers)
+// NOTE: We intentionally keep ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL in production
+// so users can use their existing Claude Code CLI configuration (API proxy, etc.)
+const STRIPPED_ENV_KEYS_BASE = [
+  "OPENAI_API_KEY",
+  "CLAUDE_CODE_USE_BEDROCK",
+  "CLAUDE_CODE_USE_VERTEX",
+]
+
+// In dev mode, also strip ANTHROPIC_API_KEY so OAuth token is used instead
+// This allows devs to test OAuth flow without unsetting their shell env
+const STRIPPED_ENV_KEYS = !app.isPackaged
+  ? [...STRIPPED_ENV_KEYS_BASE, "ANTHROPIC_API_KEY"]
+  : STRIPPED_ENV_KEYS_BASE
+```
+
+## Troubleshooting
+
+### Environment Variables Not Loading
+
+1. **Check variable name**: Use `MAIN_VITE_` prefix for `.env.local` files
+2. **Restart app**: Changes to environment require app restart
+3. **Check file location**: `.env.local` should be in project root
+4. **Verify shell profile**: For shell vars, ensure profile is sourced
+
+### Configuration Conflicts
+
+When multiple sources define the same setting:
+
+1. UI Settings (highest priority)
+2. User config env vars
+3. Vite env vars (`.env.local`)
+4. Process env vars
+5. Shell environment
+6. Default values (lowest priority)
+
+### Shell Environment Not Working
+
+1Code loads shell environment using:
+
+```typescript
+const shell = process.env.SHELL || "/bin/zsh"
+execSync(`${shell} -ilc 'echo $VAR_NAME'`)
+```
+
+Ensure:
+- Variable is in shell profile (`~/.zshrc`, not `~/.zshenv`)
+- Profile is executable and doesn't have errors
+- Shell is the correct one (check `echo $SHELL`)
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Custom Models" icon="sliders" href="/advanced/custom-models">
+    Configure API keys and custom providers
+  </Card>
+  <Card title="Voice Input" icon="microphone" href="/advanced/voice-input">
+    Set up voice transcription with API keys
+  </Card>
+  <Card title="Skills & Commands" icon="wand-magic-sparkles" href="/advanced/skills-and-commands">
+    Create custom skills and slash commands
+  </Card>
+  <Card title="MCP Integration" icon="plug" href="/features/mcp-integration">
+    Configure MCP servers
+  </Card>
+</CardGroup>

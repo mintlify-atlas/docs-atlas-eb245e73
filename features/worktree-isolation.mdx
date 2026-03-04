@@ -1,0 +1,284 @@
+---
+title: Worktree Isolation
+description: How git worktrees keep each chat session isolated from your main branch
+---
+
+Every chat in 1Code runs in its own git worktree. This means agents can make changes, run tests, and commit code without touching your main branch or interfering with other chats.
+
+## Why It Matters
+
+Running AI agents directly in your main repository is risky:
+- **Accidental commits to main** - One wrong command and your production code is altered
+- **Conflicts between sessions** - Running multiple agents at once causes file conflicts
+- **Lost work** - If an agent breaks something, you lose your local changes
+- **No isolation** - Can't compare different approaches side-by-side
+
+Worktrees solve all of these problems by giving each chat its own isolated workspace.
+
+## How It Works
+
+### Git Worktrees Explained
+
+A git worktree is a separate working directory linked to your repository. It has:
+- Its own branch
+- Its own file state
+- Shared git history with the main repo
+- No risk of conflicts with other worktrees
+
+**Under the hood:**
+```bash
+# 1Code creates a worktree for each chat
+git worktree add ../worktrees/chat-abc123 -b chat-abc123
+
+# Each worktree is a full working directory
+cd ../worktrees/chat-abc123
+git status  # Shows only changes in this chat
+```
+
+### Automatic Worktree Creation
+
+When you start a new chat:
+1. 1Code creates a new worktree in `../worktrees/chat-<id>/`
+2. A branch `chat-<id>` is created from your current branch
+3. The agent runs in this isolated directory
+4. All file changes stay in the worktree
+
+**Implementation:** Worktree configuration is managed via `src/main/lib/trpc/routers/worktree-config.ts:5`, which reads from `.cursor/worktrees.json` or `.1code/worktree.json`.
+
+### Worktree Lifecycle
+
+<Steps>
+  <Step title="Chat Created">
+    New worktree is created from your current branch. Setup scripts run automatically.
+  </Step>
+  
+  <Step title="Agent Works">
+    All file edits, commits, and git operations happen in the worktree. Your main repo is untouched.
+  </Step>
+  
+  <Step title="Review Changes">
+    View diffs, commits, and branches in the worktree. Merge to main when ready.
+  </Step>
+  
+  <Step title="Chat Archived">
+    Worktree is deleted, but the branch remains. You can reopen it later.
+  </Step>
+</Steps>
+
+## Setup Scripts
+
+Configure worktree setup commands in `.1code/worktree.json`:
+
+```json
+{
+  "setup-worktree": [
+    "npm install",
+    "npm run build"
+  ]
+}
+```
+
+Or platform-specific:
+
+```json
+{
+  "setup-worktree-unix": ["bun install"],
+  "setup-worktree-windows": ["npm install"]
+}
+```
+
+Setup scripts run automatically when a worktree is created. Common uses:
+- Install dependencies
+- Build the project
+- Set up databases or services
+- Copy environment files
+
+## Worktree Directory Structure
+
+```
+your-repo/
+├─ .git/
+├─ src/
+└─ package.json
+
+worktrees/
+├─ chat-abc123/          # Chat 1 worktree
+│  ├─ .git               # Points to main repo
+│  ├─ src/
+│  └─ package.json
+│
+├─ chat-def456/          # Chat 2 worktree
+│  ├─ .git
+│  ├─ src/
+│  └─ package.json
+│
+└─ chat-ghi789/          # Chat 3 worktree
+   └─ ...
+```
+
+Each worktree is a full copy of your repo at a specific branch. They share git objects, so disk usage is minimal.
+
+## Benefits
+
+### 1. Branch Safety
+
+Worktrees prevent accidental commits to `main`:
+- Each chat has its own branch
+- Agents can't access your main branch
+- Merging to main is explicit and manual
+
+### 2. Parallel Execution
+
+Run multiple agents simultaneously:
+- Chat 1: Refactoring the API
+- Chat 2: Adding tests
+- Chat 3: Fixing a bug
+
+No conflicts, no file locking, no waiting.
+
+### 3. Safe Experimentation
+
+<CardGroup cols={2}>
+  <Card title="Try Different Approaches" icon="flask">
+    Fork a chat to test two solutions side-by-side. Each runs in its own worktree.
+  </Card>
+  
+  <Card title="Rollback Easily" icon="rotate-left">
+    If an agent breaks something, just delete the worktree. Your main repo is safe.
+  </Card>
+  
+  <Card title="Compare Results" icon="code-compare">
+    Review diffs from multiple chats to pick the best solution.
+  </Card>
+  
+  <Card title="Preserve History" icon="clock">
+    Even after archiving a chat, the branch remains for future reference.
+  </Card>
+</CardGroup>
+
+### 4. Clean Diffs
+
+Because each chat starts from a known state, diffs are clean:
+- Only shows changes made by the agent
+- No unrelated modifications
+- Easy to review and merge
+
+## Merging Changes to Main
+
+When you're happy with the agent's work:
+
+**Option 1: Create a PR**
+1. Click "Create PR" in the changes sidebar
+2. Review the diff on GitHub
+3. Merge when ready
+
+**Option 2: Merge Locally**
+1. Switch to main branch
+2. Run `git merge chat-<id>`
+3. Resolve conflicts if any
+4. Push to remote
+
+**Option 3: Cherry-Pick Commits**
+1. Open commit history
+2. Right-click a commit
+3. Select "Cherry-pick to main"
+
+## Configuration
+
+### Custom Worktree Location
+
+By default, worktrees are created in `../worktrees/`. Change this in settings:
+
+```json
+{
+  "worktree": {
+    "location": "/path/to/custom/worktrees"
+  }
+}
+```
+
+### Shared Worktree Directory
+
+Use a shared directory for all projects:
+
+```json
+{
+  "worktree": {
+    "location": "~/1code-worktrees"
+  }
+}
+```
+
+Worktrees are named `<project>-chat-<id>` to avoid collisions.
+
+### Cleanup Policy
+
+Configure when worktrees are deleted:
+
+- **On archive:** Delete immediately (default)
+- **On exit:** Delete when 1Code closes
+- **Manual:** Keep until explicitly deleted
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Worktree creation failed">
+    **Cause:** Git version too old or insufficient permissions.
+    
+    **Fix:**
+    - Update git to 2.35+
+    - Ensure write access to the worktree directory
+    - Check disk space
+  </Accordion>
+  
+  <Accordion title="Setup scripts not running">
+    **Cause:** Scripts are not executable or failed to run.
+    
+    **Fix:**
+    - Check `.1code/worktree.json` syntax
+    - Make scripts executable: `chmod +x script.sh`
+    - View logs in Settings → Debug → Worktree Logs
+  </Accordion>
+  
+  <Accordion title="Changes not showing in main repo">
+    **Cause:** Worktrees are isolated by design.
+    
+    **Fix:**
+    - This is expected behavior
+    - Merge the chat branch to main when ready
+    - Or create a PR to review changes first
+  </Accordion>
+  
+  <Accordion title="Disk space filling up">
+    **Cause:** Too many worktrees or large dependencies.
+    
+    **Fix:**
+    - Archive old chats to delete worktrees
+    - Use symbolic links for node_modules
+    - Configure cleanup policy to "On exit"
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<Card title="Review Before Merging" icon="eye">
+  Always review the diff and commit history before merging a chat branch to main.
+</Card>
+
+<Card title="Use Descriptive Branch Names" icon="git-branch">
+  Rename chat branches to describe their purpose: `git branch -m chat-abc123 feature/add-auth`
+</Card>
+
+<Card title="Clean Up Regularly" icon="trash">
+  Archive chats you're not using to free up disk space.
+</Card>
+
+<Card title="Test in the Worktree" icon="flask">
+  Run tests in the worktree before merging to catch issues early.
+</Card>
+
+## Related Features
+
+- [Background Agents](/features/background-agents) - Cloud sandboxes use the same isolation model
+- [Visual UI](/features/visual-ui) - Review worktree changes with diff previews
+- [Multi-Agent Support](/features/multi-agent-support) - Run different agents in parallel worktrees

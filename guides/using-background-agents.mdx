@@ -1,0 +1,410 @@
+---
+title: "Using Background Agents"
+description: "Setting up and monitoring cloud-based agents that run when your laptop sleeps"
+---
+
+## What are Background Agents?
+
+Background agents run in isolated cloud sandboxes, allowing them to continue working even when you:
+- Close your laptop
+- Lose internet connection temporarily
+- Shut down your computer
+- Switch to other tasks
+
+Perfect for long-running tasks like large refactors, test suite fixes, or dependency updates.
+
+<Info>
+Background agents require a [Pro or Max subscription](https://1code.dev/pro). Free and local installs run agents locally only.
+</Info>
+
+## How Background Agents Work
+
+<Steps>
+  <Step title="Cloud sandbox creation">
+    When you start a background agent, 1Code:
+    - Spins up an isolated VM in the cloud
+    - Clones your repository
+    - Installs dependencies
+    - Sets up the development environment
+  </Step>
+
+  <Step title="Agent execution">
+    The agent runs independently in the sandbox:
+    - Reads your code
+    - Executes commands
+    - Makes file changes
+    - Runs tests and builds
+    - Commits progress automatically
+  </Step>
+
+  <Step title="Live updates">
+    You receive real-time updates:
+    - Message stream shows agent activity
+    - Git commits appear as they're made
+    - Terminal output is captured
+    - File diffs are visible in the UI
+  </Step>
+
+  <Step title="Completion">
+    When the agent finishes:
+    - Final commits are pushed to remote
+    - Pull request is created (if configured)
+    - Sandbox is shut down automatically
+    - You can download artifacts or logs
+  </Step>
+</Steps>
+
+## Starting a Background Agent
+
+### From New Chat
+
+<Steps>
+  <Step title="Create a new chat">
+    Click **New Chat** or press `Cmd+N`.
+  </Step>
+
+  <Step title="Select background mode">
+    In the work mode selector, choose **Background** (cloud icon).
+  </Step>
+
+  <Step title="Choose your repository">
+    Background agents work best with repositories that have:
+    - A GitHub remote (for pushing changes)
+    - Well-defined setup scripts
+    - Automated tests
+    - Clear build processes
+  </Step>
+
+  <Step title="Pick agent and model">
+    Both Claude Code and Codex support background mode:
+    - Claude Code: Better for complex, multi-file changes
+    - Codex: Faster for targeted fixes
+  </Step>
+
+  <Step title="Write your prompt">
+    Be more detailed than usual since you won't be available for clarifications:
+    
+    **Good background prompts:**
+    - "Upgrade all dependencies to their latest compatible versions, run tests after each major upgrade, and fix any breaking changes"
+    - "Refactor the entire API layer to use async/await instead of callbacks, maintaining backwards compatibility"
+    - "Fix all ESLint errors in the project by updating code (not disabling rules), and ensure tests still pass"
+    
+    **Include context:**
+    - Expected behavior
+    - Testing requirements
+    - Rollback conditions
+    - PR description template
+  </Step>
+
+  <Step title="Launch">
+    Click **Send**. The agent will:
+    - Start provisioning the sandbox (~30-60 seconds)
+    - Clone and set up your repository
+    - Begin executing your prompt
+  </Step>
+</Steps>
+
+### Converting Local to Background
+
+You can convert an existing local chat to background:
+
+1. Open the chat you want to move to background
+2. Click the three-dot menu in the header
+3. Select **Move to Background**
+4. Confirm the migration
+
+The current state is uploaded to a cloud sandbox, and execution continues there.
+
+## Monitoring Background Agents
+
+### Desktop App
+
+The chat interface shows real-time updates:
+
+**Status indicators:**
+- 🔵 **Provisioning**: Sandbox is being created
+- 🟢 **Running**: Agent is actively working
+- 🟡 **Idle**: Waiting for user input or external trigger
+- 🔴 **Failed**: Encountered an error
+- ⚪ **Completed**: Task finished successfully
+
+**Live features:**
+- Message stream updates in real-time
+- Git operations appear with badges
+- Terminal output scrolls as it's captured
+- File diffs load as changes are made
+
+### Mobile PWA
+
+Access background agents from your phone:
+
+1. Visit `https://1code.dev` on mobile
+2. Log in with your account
+3. Tap **Install** when prompted (saves to home screen)
+4. View all active agents on the dashboard
+5. Tap any agent to see progress and logs
+
+**Mobile features:**
+- Push notifications for key events
+- Quick status overview
+- Ability to pause or stop agents
+- Read-only access to logs and diffs
+
+### Notifications
+
+Background agents send notifications for:
+- ✅ Task completion
+- ❌ Errors or failures
+- ❓ Questions needing your input
+- 🔀 Pull requests created
+- ⏸️ Agent paused waiting for approval
+
+Configure notifications in **Settings** > **Notifications**.
+
+## Managing Background Agents
+
+### Pausing and Resuming
+
+**Pause an agent:**
+1. Open the background chat
+2. Click **Pause** in the header
+3. Agent stops after current task completes
+4. Sandbox remains active (you're billed for compute time)
+
+**Resume:**
+1. Click **Resume** in the header
+2. Agent continues from where it paused
+
+<Tip>
+Pause agents during off-hours if you want to review progress before they continue.
+</Tip>
+
+### Stopping Agents
+
+**Graceful stop:**
+1. Click the three-dot menu
+2. Select **Stop Agent**
+3. Agent finishes current operation
+4. Commits work-in-progress
+5. Sandbox shuts down
+
+**Force stop:**
+1. Hold `Shift` while clicking **Stop**
+2. Agent terminates immediately
+3. WIP may be lost
+4. Use only if agent is stuck
+
+### Following Up
+
+Send additional messages to running agents:
+
+1. Type your message in the input
+2. Press **Send**
+3. Message is queued and processed in order
+
+**Common follow-ups:**
+- "Also update the documentation"
+- "Run the test suite again"
+- "Create the PR now"
+- "Cancel this task and start over"
+
+## Live Browser Previews
+
+For web projects, background agents provide live browser previews:
+
+<Steps>
+  <Step title="Automatic detection">
+    1Code detects common dev servers:
+    - `npm run dev` or `npm start`
+    - `yarn dev` or `yarn start`
+    - `python manage.py runserver`
+    - `rails server`
+    - Custom commands from `package.json`
+  </Step>
+
+  <Step title="Port forwarding">
+    Dev server ports are automatically forwarded:
+    - Secure HTTPS tunnel created
+    - Public URL generated
+    - Link appears in chat
+  </Step>
+
+  <Step title="Opening the preview">
+    Click the preview link in chat:
+    - Opens in your default browser
+    - URL is unique to your session
+    - Automatically refreshes on changes
+  </Step>
+
+  <Step title="Sharing previews">
+    Share the preview URL with teammates:
+    - Anyone with the link can view
+    - Read-only access (no code changes)
+    - Expires when agent stops
+  </Step>
+</Steps>
+
+**Supported frameworks:**
+- React, Vue, Svelte, Angular
+- Next.js, Nuxt, SvelteKit
+- Django, Flask, FastAPI
+- Rails, Laravel, Express
+- Any HTTP server on standard ports
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Detailed Prompts" icon="file-lines">
+    Provide comprehensive instructions since you won't be available to clarify. Include success criteria and rollback conditions.
+  </Card>
+  
+  <Card title="Automated Tests" icon="vial">
+    Ensure your project has tests. Background agents use them to verify changes work correctly.
+  </Card>
+  
+  <Card title="Small Iterations" icon="arrows-spin">
+    Break large tasks into smaller background agents. Easier to debug and recover if something fails.
+  </Card>
+  
+  <Card title="Monitor Progress" icon="chart-line">
+    Check in periodically via desktop or mobile. Catch issues early before the agent goes too far down the wrong path.
+  </Card>
+</CardGroup>
+
+### When to Use Background Agents
+
+**Perfect for:**
+- Large refactoring projects (multi-hour)
+- Dependency upgrades across many packages
+- Test suite fixes (hundreds of failing tests)
+- Codebase-wide changes (rename, restructure)
+- CI/CD pipeline fixes
+- Documentation generation
+
+**Not ideal for:**
+- Quick one-file changes
+- Tasks requiring frequent human input
+- Highly exploratory work
+- Changes you need immediately
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Sandbox provisioning failed">
+    **Cause**: Infrastructure issue or invalid configuration.
+    
+    **Solution**:
+    1. Retry the operation (transient failures are common)
+    2. Check your subscription status at [1code.dev/account](https://1code.dev/account)
+    3. Verify repository is accessible from the cloud
+    4. If persistent, contact support with the error ID
+  </Accordion>
+  
+  <Accordion title="Agent can't access private repository">
+    **Cause**: GitHub permissions not granted.
+    
+    **Solution**:
+    1. Go to **Settings** > **Integrations** > **GitHub**
+    2. Click **Reconnect**
+    3. Grant access to the required repositories
+    4. Retry the background agent creation
+  </Accordion>
+  
+  <Accordion title="Background agent is slow">
+    **Cause**: Heavy dependencies, large repository, or limited resources.
+    
+    **Solution**:
+    - Upgrade to Max plan for more powerful sandboxes
+    - Optimize setup scripts to cache dependencies
+    - Use shallow clones for large repositories
+    - Add `.1code/background-setup.sh` for optimized background setup
+  </Accordion>
+  
+  <Accordion title="Agent stopped with no error">
+    **Cause**: Likely hit timeout, resource limit, or billing issue.
+    
+    **Solution**:
+    1. Check the last few messages for clues
+    2. Review execution time - may have hit plan limits
+    3. Check billing status
+    4. Download logs: Click three-dot menu > **Download Logs**
+  </Accordion>
+  
+  <Accordion title="Can't see live updates">
+    **Cause**: WebSocket connection issue or browser tab inactive.
+    
+    **Solution**:
+    1. Refresh the page
+    2. Check browser console for WebSocket errors
+    3. Try a different browser
+    4. Disable browser extensions that might block connections
+    5. Check firewall/network settings
+  </Accordion>
+  
+  <Accordion title="Preview URL not working">
+    **Cause**: Dev server not running or port not detected.
+    
+    **Solution**:
+    1. Check agent's terminal output for server startup
+    2. Verify dev server is running on standard port (3000, 8000, etc.)
+    3. Manual port forwarding: Send message "expose port 3000"
+    4. Check firewall rules in sandbox aren't blocking
+  </Accordion>
+</AccordionGroup>
+
+## Pricing and Limits
+
+<Info>
+Background agents are metered by compute time. See current rates at [1code.dev/pricing](https://1code.dev/pricing).
+</Info>
+
+**Plan limits:**
+
+| Plan | Concurrent Agents | Max Runtime | Sandbox Size |
+|------|------------------|-------------|---------------|
+| Free | 0 | - | - |
+| Pro | 3 | 4 hours | 2 vCPU, 4GB RAM |
+| Max | 10 | 8 hours | 4 vCPU, 8GB RAM |
+
+**Billing:**
+- Charged per minute of active compute time
+- Paused agents don't consume credits (but sandbox stays warm)
+- Stopped agents release resources immediately
+- Monthly compute credits with rollover
+
+## API Access
+
+Run background agents programmatically via API:
+
+```bash
+curl -X POST https://1code.dev/api/v1/tasks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "repository": "https://github.com/your-org/your-repo",
+    "prompt": "Fix all TypeScript errors in the project",
+    "branch": "main",
+    "model": "claude-3.5-sonnet"
+  }'
+```
+
+See the [API documentation](/api/tasks) for full details.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Automations" icon="bolt" href="/guides/automations">
+    Trigger background agents automatically from GitHub, Linear, or Slack.
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Run agents programmatically via the 1Code API.
+  </Card>
+  
+  <Card title="Mobile PWA" icon="mobile" href="https://1code.dev/agents">
+    Install the mobile app to monitor agents on the go.
+  </Card>
+  
+  <Card title="Pricing" icon="dollar-sign" href="https://1code.dev/pricing">
+    Learn about background agent pricing and limits.
+  </Card>
+</CardGroup>

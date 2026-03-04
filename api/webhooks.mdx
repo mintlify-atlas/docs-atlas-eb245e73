@@ -1,0 +1,269 @@
+---
+title: Webhooks
+description: Get real-time notifications when tasks complete
+---
+
+## Overview
+
+Webhooks allow you to receive real-time notifications when agent tasks complete. Instead of polling the API, 1Code will send an HTTP POST request to your specified webhook URL.
+
+## Setup
+
+Provide a `webhook_url` when creating a task:
+
+```bash
+curl -X POST https://1code.dev/api/v1/tasks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repository": "https://github.com/your-org/your-repo",
+    "prompt": "Fix the failing tests",
+    "webhook_url": "https://your-app.com/webhooks/1code"
+  }'
+```
+
+## Webhook Events
+
+1Code sends webhook notifications for the following events:
+
+- `task.completed` - Task finished successfully
+- `task.failed` - Task failed with an error
+- `task.pr_created` - Pull request created
+- `task.pr_merged` - Pull request merged (if auto-merge enabled)
+
+## Webhook Payload
+
+When an event occurs, 1Code sends a POST request to your webhook URL:
+
+```json
+{
+  "event": "task.completed",
+  "task_id": "task_abc123",
+  "status": "completed",
+  "repository": "https://github.com/your-org/your-repo",
+  "pr_url": "https://github.com/your-org/your-repo/pull/42",
+  "pr_number": 42,
+  "branch": "1code/fix-failing-tests",
+  "commits": [
+    {
+      "sha": "abc123def",
+      "message": "Fix: correct test assertions",
+      "timestamp": "2026-03-04T10:30:00Z"
+    }
+  ],
+  "completed_at": "2026-03-04T10:30:00Z",
+  "created_at": "2026-03-04T10:00:00Z"
+}
+```
+
+### Payload Fields
+
+<ResponseField name="event" type="string">
+  Event type: `task.completed`, `task.failed`, `task.pr_created`, `task.pr_merged`
+</ResponseField>
+
+<ResponseField name="task_id" type="string">
+  Unique task identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Final task status: `completed`, `failed`
+</ResponseField>
+
+<ResponseField name="repository" type="string">
+  Repository URL
+</ResponseField>
+
+<ResponseField name="pr_url" type="string">
+  Pull request URL (if created)
+</ResponseField>
+
+<ResponseField name="pr_number" type="number">
+  Pull request number (if created)
+</ResponseField>
+
+<ResponseField name="branch" type="string">
+  Branch name created by the agent
+</ResponseField>
+
+<ResponseField name="commits" type="array">
+  Array of commit objects
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message (if task failed)
+</ResponseField>
+
+<ResponseField name="completed_at" type="string">
+  ISO 8601 timestamp when task completed
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp when task was created
+</ResponseField>
+
+## Webhook Endpoint Implementation
+
+<CodeGroup>
+```javascript Node.js/Express
+app.post('/webhooks/1code', (req, res) => {
+  const { event, task_id, status, pr_url } = req.body;
+
+  console.log(`Task ${task_id} ${event}`);
+
+  if (event === 'task.completed') {
+    console.log(`Pull request: ${pr_url}`);
+    // Handle successful completion
+  } else if (event === 'task.failed') {
+    console.error(`Task failed: ${req.body.error}`);
+    // Handle failure
+  }
+
+  // Respond with 200 to acknowledge receipt
+  res.status(200).json({ received: true });
+});
+```
+
+```python Python/Flask
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/webhooks/1code', methods=['POST'])
+def handle_webhook():
+    data = request.json
+    event = data.get('event')
+    task_id = data.get('task_id')
+    status = data.get('status')
+
+    print(f"Task {task_id} {event}")
+
+    if event == 'task.completed':
+        pr_url = data.get('pr_url')
+        print(f"Pull request: {pr_url}")
+        # Handle successful completion
+    elif event == 'task.failed':
+        error = data.get('error')
+        print(f"Task failed: {error}")
+        # Handle failure
+
+    # Respond with 200 to acknowledge receipt
+    return jsonify({'received': True}), 200
+```
+
+```go Go
+func handleWebhook(w http.ResponseWriter, r *http.Request) {
+    var payload struct {
+        Event     string `json:"event"`
+        TaskID    string `json:"task_id"`
+        Status    string `json:"status"`
+        PRUrl     string `json:"pr_url"`
+        Error     string `json:"error"`
+    }
+
+    if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    log.Printf("Task %s %s", payload.TaskID, payload.Event)
+
+    if payload.Event == "task.completed" {
+        log.Printf("Pull request: %s", payload.PRUrl)
+        // Handle successful completion
+    } else if payload.Event == "task.failed" {
+        log.Printf("Task failed: %s", payload.Error)
+        // Handle failure
+    }
+
+    // Respond with 200 to acknowledge receipt
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]bool{"received": true})
+}
+```
+</CodeGroup>
+
+## Security
+
+### Webhook Signatures
+
+1Code signs webhook requests with a signature in the `X-1Code-Signature` header. Verify this signature to ensure the webhook is from 1Code:
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret) {
+  const hmac = crypto.createHmac('sha256', secret);
+  hmac.update(JSON.stringify(payload));
+  const expectedSignature = hmac.digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
+app.post('/webhooks/1code', (req, res) => {
+  const signature = req.headers['x-1code-signature'];
+  const webhookSecret = process.env.ONECODE_WEBHOOK_SECRET;
+
+  if (!verifyWebhook(req.body, signature, webhookSecret)) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  // Process webhook...
+  res.status(200).json({ received: true });
+});
+```
+
+### Webhook Secret
+
+Your webhook secret is available in Settings > API Keys > Webhook Secret. Use it to verify webhook signatures.
+
+## Retry Policy
+
+If your webhook endpoint returns a non-2xx status code, 1Code will retry the webhook:
+
+- **Retry schedule**: 1min, 5min, 30min, 2h, 12h
+- **Max retries**: 5 attempts
+- **Timeout**: 10 seconds per request
+
+## Testing Webhooks
+
+### Local Testing
+
+Use a tool like [ngrok](https://ngrok.com) to expose your local server:
+
+```bash
+ngrok http 3000
+```
+
+Then use the ngrok URL as your webhook URL:
+
+```
+https://abc123.ngrok.io/webhooks/1code
+```
+
+### Webhook Logs
+
+View webhook delivery logs in your dashboard at Settings > Webhooks to debug failed deliveries.
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Respond quickly">
+    Return a 200 response immediately after receiving the webhook. Perform heavy processing asynchronously.
+  </Accordion>
+
+  <Accordion title="Handle duplicates">
+    Webhooks may be delivered more than once. Use the `task_id` to deduplicate events.
+  </Accordion>
+
+  <Accordion title="Verify signatures">
+    Always verify webhook signatures to prevent spoofed requests.
+  </Accordion>
+
+  <Accordion title="Use HTTPS">
+    Webhook URLs must use HTTPS in production to ensure secure delivery.
+  </Accordion>
+</AccordionGroup>

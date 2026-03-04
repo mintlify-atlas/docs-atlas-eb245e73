@@ -1,80 +1,195 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Get started with 1Code in under 5 minutes. Run your first AI coding agent locally."
 ---
 
-## Get started in three steps
+## Get your first agent running in 3 steps
 
-Get your documentation site running locally and make your first customization.
+This guide will help you install 1Code, create your first chat session, and run an AI coding agent on your local project.
 
-### Step 1: Set up your local environment
+<Steps>
+  <Step title="Download and install 1Code">
+    Choose your installation method:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    <Tabs>
+      <Tab title="Download (Recommended)">
+        Visit [1code.dev](https://1code.dev) and download the pre-built app for your platform:
+        
+        - **macOS**: Download the DMG (Apple Silicon or Intel)
+        - **Windows**: Download the installer (coming soon)
+        - **Linux**: Download AppImage or DEB (coming soon)
 
-### Step 2: Deploy your changes
+        <Note>
+          Pre-built releases include automatic updates and support for background agents. Your subscription helps maintain and improve 1Code.
+        </Note>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+        **macOS Installation:**
+        1. Open the downloaded DMG file
+        2. Drag 1Code to your Applications folder
+        3. Launch 1Code from Applications
+        4. If you see a security warning, go to **System Preferences** → **Security & Privacy** and click **Open Anyway**
+      </Tab>
+      
+      <Tab title="Build from Source">
+        Build 1Code yourself from the open-source repository:
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+        **Prerequisites:**
+        - [Bun](https://bun.sh) runtime
+        - Python 3.11+ with `setuptools` installed
+        - macOS: Xcode Command Line Tools
+        - Linux: Build essentials
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+        **Build steps:**
+        ```bash
+        # Clone the repository
+        git clone https://github.com/21st-dev/1code.git
+        cd 1code
 
-### Step 3: Go live
+        # Install dependencies
+        bun install
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+        # Download required agent binaries (critical!)
+        bun run claude:download
+        bun run codex:download
 
-## Next steps
+        # Build the app
+        bun run build
 
-Now that you have your docs running, explore these key features:
+        # Package for your platform
+        bun run package:mac     # macOS
+        # bun run package:win   # Windows
+        # bun run package:linux # Linux
+        ```
+
+        <Warning>
+          Don't skip the `claude:download` and `codex:download` steps! These download the required agent binaries. Without them, the app will build but agents won't work.
+        </Warning>
+
+        The packaged app will be in the `release/` directory.
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Create your first chat session">
+    When you first launch 1Code, you'll be prompted to:
+
+    1. **Select a project folder** - Choose any local Git repository or project directory
+    2. **Configure your API keys** - Add your Anthropic API key for Claude, or OpenAI key for Codex
+       - Click **Settings** → **API Keys**
+       - Enter your API key and save
+
+    <Tip>
+      Don't have an API key? Get one from [Anthropic](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/).
+    </Tip>
+
+    3. **Start a new chat** - Click the **New Chat** button or press `Cmd/Ctrl + N`
+  </Step>
+
+  <Step title="Run your first agent">
+    Now let's give your agent a task!
+
+    **Try these example prompts:**
+
+    <CodeGroup>
+    ```text Simple task
+    Add a README file with project setup instructions
+    ```
+
+    ```text Code review
+    Review the authentication code in src/auth/ and suggest improvements
+    ```
+
+    ```text Bug fix
+    Fix the TypeScript errors in the user profile component
+    ```
+
+    ```text Feature request
+    Add dark mode support to the UI using CSS variables
+    ```
+    </CodeGroup>
+
+    **Watch your agent work:**
+    - See real-time tool execution (bash commands, file edits)
+    - Review diffs before they're applied
+    - View file changes with syntax highlighting
+    - Approve or reject changes
+
+    <Note>
+      Each chat runs in its own Git worktree by default, keeping your main branch safe. You can disable this in settings if you prefer.
+    </Note>
+  </Step>
+</Steps>
+
+## What's next?
+
+Now that you have 1Code running, explore these powerful features:
 
 <CardGroup cols={2}>
+  <Card title="Git Worktree Isolation" icon="code-branch" href="/features/worktree-isolation">
+    Run agents in isolated worktrees without touching your main branch.
+  </Card>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+  <Card title="Plan Mode" icon="list-check" href="/features/plan-mode">
+    Let agents ask clarifying questions and show plans before execution.
+  </Card>
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+  <Card title="Background Agents" icon="cloud" href="/features/background-agents">
+    Run agents in cloud sandboxes that work while you sleep.
+  </Card>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="MCP Integration" icon="puzzle-piece" href="/features/mcp-integration">
+    Connect external tools and data sources to your agents.
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Common first-run issues
+
+<AccordionGroup>
+  <Accordion title="Agent binary not found" icon="triangle-exclamation">
+    **Error:** "Claude binary not found" or "Codex binary not found"
+
+    **Solution:** If you built from source, make sure you ran the download scripts:
+    ```bash
+    bun run claude:download
+    bun run codex:download
+    ```
+
+    The binaries should be in `resources/bin/` after download.
+  </Accordion>
+
+  <Accordion title="API key not working" icon="key">
+    **Error:** "Invalid API key" or authentication failures
+
+    **Solution:**
+    1. Verify your API key is correct in **Settings** → **API Keys**
+    2. Check your API key has sufficient credits/quota
+    3. For Anthropic, ensure you're using a valid Claude API key (not Console key)
+  </Accordion>
+
+  <Accordion title="macOS security warning" icon="shield">
+    **Error:** "1Code can't be opened because it is from an unidentified developer"
+
+    **Solution:**
+    1. Go to **System Preferences** → **Security & Privacy**
+    2. Click **Open Anyway** next to the 1Code warning
+    3. Confirm you want to open the app
+
+    For builds from source, you may need to remove quarantine:
+    ```bash
+    xattr -cr /Applications/1Code.app
+    ```
+  </Accordion>
+
+  <Accordion title="Python build errors" icon="python">
+    **Error:** Build fails with Python-related errors
+
+    **Solution:**
+    1. Ensure Python 3.11+ is installed: `python --version`
+    2. Install setuptools: `pip install setuptools`
+    3. On Python 3.12+, setuptools is required for native module rebuilds
+  </Accordion>
+</AccordionGroup>
+
+<Card title="Need more help?" icon="discord" href="https://discord.gg/8ektTZGnj4">
+  Join our Discord community for support and discussions.
+</Card>

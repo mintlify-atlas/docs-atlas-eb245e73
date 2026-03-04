@@ -1,0 +1,212 @@
+---
+title: "Creating Your First Chat"
+description: "Step-by-step guide to create and start your first AI coding agent chat session"
+---
+
+## Overview
+
+1Code uses chat sessions to interact with AI coding agents like Claude Code and Codex. Each chat can run in its own isolated worktree, keeping your work organized and your main branch safe.
+
+## Before You Start
+
+<AccordionGroup>
+  <Accordion title="Set up API keys">
+    You'll need API keys for the agents you want to use:
+    - **Claude Code**: Anthropic API key with Claude access
+    - **Codex**: 21st.dev API key (get one at [1code.dev](https://1code.dev))
+    
+    Configure these in **Settings** > **Models** tab.
+  </Accordion>
+  
+  <Accordion title="Choose or create a project">
+    1Code works with git repositories. You can:
+    - Open an existing local repository
+    - Clone a repository from GitHub
+    - Create a new project directory
+  </Accordion>
+</AccordionGroup>
+
+## Creating Your First Chat
+
+<Steps>
+  <Step title="Open the new chat form">
+    Click the **New Chat** button (Plus icon) in the top-left corner, or press `Cmd+N` (macOS) / `Ctrl+N` (Windows/Linux).
+  </Step>
+
+  <Step title="Select your project">
+    Click the **Project** dropdown to choose where the agent will work:
+    - Select an existing project from the list
+    - Click **Add Project** to browse for a new repository
+    - Recent projects appear at the top for quick access
+  </Step>
+
+  <Step title="Choose your work mode">
+    Select how the agent will work:
+    
+    - **Worktree** (Recommended): Creates an isolated git worktree on a new branch. Safe for experimentation.
+    - **Branch**: Works directly on an existing branch in your main repository
+    - **Local**: Works directly in your project without git isolation (not recommended)
+    
+    <Tip>Use Worktree mode for most tasks to keep your main branch clean and allow multiple agents to work simultaneously.</Tip>
+  </Step>
+
+  <Step title="Pick a base branch (Worktree mode only)">
+    If using Worktree mode, choose which branch to start from:
+    - The default branch (usually `main` or `master`) is selected automatically
+    - Click the branch selector to choose a different starting point
+    - Your new worktree will branch off from this point
+  </Step>
+
+  <Step title="Select your agent and model">
+    Choose the AI agent to work with:
+    
+    **Claude Code**
+    - Best for: Complex refactoring, architecture changes, full-stack development
+    - Models: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
+    
+    **Codex**
+    - Best for: Fast iteration, specific bug fixes, quick features
+    - Models: Various Codex reasoning models with different thinking levels
+    
+    <Info>Extended Thinking is enabled by default for supported models, allowing deeper reasoning on complex tasks.</Info>
+  </Step>
+
+  <Step title="Write your first prompt">
+    In the input field, describe what you want the agent to do:
+    
+    **Good prompts:**
+    - "Add user authentication using JWT tokens"
+    - "Fix the bug causing crashes when uploading large files"
+    - "Refactor the payment service to use async/await"
+    
+    **Tips for better prompts:**
+    - Be specific about what you want changed
+    - Mention relevant files or areas if you know them
+    - Describe the desired outcome, not just the implementation
+  </Step>
+
+  <Step title="Optional: Add context">
+    Help the agent understand your project better:
+    
+    **Attach files**: Click the paperclip icon to attach:
+    - Code files to reference
+    - Screenshots of bugs or UI
+    - Documentation files
+    - Error logs or stack traces
+    
+    **Use mentions**: Type `@` to reference:
+    - `@file`: Mention specific files from your project
+    - `@mcp`: Access MCP server tools if configured
+  </Step>
+
+  <Step title="Send and watch">
+    Click **Send** or press `Cmd+Enter` to start the chat.
+    
+    You'll see the agent:
+    - Read and analyze your code
+    - Plan changes in real-time
+    - Execute bash commands
+    - Edit files with live diffs
+    - Run tests and builds
+  </Step>
+</Steps>
+
+## Understanding the Chat Interface
+
+### Message Types
+
+<CardGroup cols={2}>
+  <Card title="User Messages" icon="user">
+    Your prompts and instructions appear on the right side with a blue accent.
+  </Card>
+  
+  <Card title="Assistant Messages" icon="robot">
+    Agent responses appear on the left with tool calls, file edits, and explanations.
+  </Card>
+  
+  <Card title="System Messages" icon="circle-info">
+    Status updates about worktree creation, git operations, and background tasks.
+  </Card>
+  
+  <Card title="Error Messages" icon="triangle-exclamation">
+    Red-colored alerts when something goes wrong, with suggestions for fixes.
+  </Card>
+</CardGroup>
+
+### Tool Execution Display
+
+As the agent works, you'll see real-time tool usage:
+
+- **Bash commands**: Terminal output with syntax highlighting
+- **File edits**: Side-by-side diffs showing before/after
+- **File reads**: Quick previews of files the agent is examining
+- **Web searches**: Results from searching documentation or references
+
+### Git Activity Badges
+
+Git operations appear as badges on messages:
+- **Created branch**: When a new worktree branch is created
+- **Committed**: When changes are committed to git
+- **Pushed**: When commits are pushed to remote
+- **Created PR**: When a pull request is opened
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Working with Worktrees" icon="code-branch" href="/guides/working-with-worktrees">
+    Learn how to manage multiple isolated development environments.
+  </Card>
+  
+  <Card title="Git Integration" icon="git-alt" href="/guides/git-integration">
+    Master the built-in git client for commits, branches, and PRs.
+  </Card>
+  
+  <Card title="Background Agents" icon="cloud" href="/guides/using-background-agents">
+    Run agents in the cloud that continue working when you close your laptop.
+  </Card>
+  
+  <Card title="Plan Mode" icon="list-check" href="/features/plan-mode">
+    Use Plan Mode for complex tasks that need upfront planning.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Chat won't start - API key error">
+    **Solution**: Go to **Settings** > **Models** and verify your API keys are entered correctly.
+    - Claude Code needs an Anthropic API key
+    - Codex needs a 21st.dev API key
+    - Test the connection using the **Test** button
+  </Accordion>
+  
+  <Accordion title="Worktree creation failed">
+    **Common causes**:
+    - Another git operation is in progress - wait and retry
+    - Git LFS is required but not installed - run `brew install git-lfs` (macOS) or equivalent
+    - Repository is locked - remove `.git/index.lock` if no git operations are running
+    
+    **Solution**: Check the error message details. Most worktree errors include specific instructions.
+  </Accordion>
+  
+  <Accordion title="Agent seems stuck or slow">
+    **Check**:
+    - Network connection if using Claude Code or Codex
+    - System resources - agent operations can be CPU intensive
+    - Background processes - git operations or dependency installs may be running
+    
+    **Solution**: Look at the terminal output in the message details. You can cancel and restart if needed.
+  </Accordion>
+  
+  <Accordion title="Can't select my project">
+    **Solution**:
+    1. Make sure the directory is a valid git repository
+    2. Try **Add Project** to browse and add it manually
+    3. Check that you have read/write permissions for the directory
+    4. For remote repositories, ensure they're cloned locally first
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+Stuck on something? Join our [Discord community](https://discord.gg/8ektTZGnj4) or check the [troubleshooting guide](/resources/troubleshooting) for more help.
+</Note>

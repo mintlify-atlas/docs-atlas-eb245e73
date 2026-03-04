@@ -1,0 +1,186 @@
+---
+title: Introduction
+description: Welcome to 1Code - the orchestration layer for AI coding agents
+mode: custom
+---
+
+<div className="relative overflow-hidden bg-gradient-to-br from-[#6366f1] via-[#4f46e5] to-[#4338ca] dark:from-[#4338ca] dark:via-[#3730a3] dark:to-[#312e81]">
+  <div className="absolute inset-0 bg-black/20"></div>
+  <div className="relative max-w-6xl mx-auto px-6 py-20 sm:py-24 lg:py-28">
+    <div className="text-center">
+      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+        Welcome to 1Code
+      </h1>
+      <p className="text-lg sm:text-xl text-white/90 max-w-3xl mx-auto mb-8">
+        Run Claude Code, Codex, and more in one powerful desktop app. Work with AI agents locally or in the cloud, with git worktree isolation and real-time previews.
+      </p>
+      <div className="flex flex-wrap justify-center gap-4">
+        <a 
+          href="/quickstart" 
+          className="inline-flex items-center px-6 py-3 bg-white text-[#6366f1] font-semibold rounded-lg hover:bg-gray-100 transition-colors no-underline"
+        >
+          Get Started
+          <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+        <a 
+          href="/api/overview" 
+          className="inline-flex items-center px-6 py-3 border-2 border-white/30 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors no-underline"
+        >
+          API Reference
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="text-center mb-12">
+    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Get Started in Minutes
+    </h2>
+    <p className="text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+      Set up 1Code and run your first AI coding agent in just a few steps
+    </p>
+  </div>
+
+  <Steps>
+    <Step title="Install 1Code">
+      Download the desktop app from [1code.dev](https://1code.dev) or build from source:
+
+      ```bash
+      git clone https://github.com/21st-dev/1code
+      cd 1code
+      bun install
+      bun run claude:download
+      bun run codex:download
+      bun run build
+      bun run package:mac
+      ```
+    </Step>
+
+    <Step title="Create your first project">
+      Open 1Code and create a new project by selecting a local folder. Each project can have multiple chat sessions with different agents.
+
+      <Note>
+        1Code uses git worktrees to isolate each chat session, keeping your main branch clean and safe.
+      </Note>
+    </Step>
+
+    <Step title="Start a chat with an agent">
+      Choose between Claude Code or Codex, then start chatting. The agent can read files, execute commands, make edits, and more - all visible in real-time in the UI.
+
+      ```bash
+      # Example: Ask the agent to add a new feature
+      "Add user authentication with JWT tokens"
+      ```
+    </Step>
+
+    <Step title="Review and merge changes">
+      See diff previews of all changes, review the agent's work, and merge to your main branch using the built-in git client.
+    </Step>
+  </Steps>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="text-center mb-12">
+    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Powerful Features
+    </h2>
+    <p className="text-base text-gray-600 dark:text-gray-400">
+      Everything you need to work effectively with AI coding agents
+    </p>
+  </div>
+
+  <CardGroup cols={3}>
+    <Card title="Multi-Agent Support" icon="users" href="/features/multi-agent-support">
+      Switch between Claude Code, Codex, and custom models instantly
+    </Card>
+    <Card title="Visual UI" icon="desktop" href="/features/visual-ui">
+      See diff previews, git activity, and tool execution in real-time
+    </Card>
+    <Card title="Worktree Isolation" icon="code-branch" href="/features/worktree-isolation">
+      Each chat runs in its own git worktree - never touch main
+    </Card>
+    <Card title="Background Agents" icon="cloud" href="/features/background-agents">
+      Run agents in cloud sandboxes that keep working when you close your laptop
+    </Card>
+    <Card title="Plan Mode" icon="list-check" href="/features/plan-mode">
+      Review structured plans before execution with clarifying questions
+    </Card>
+    <Card title="MCP Integration" icon="plug" href="/features/mcp-integration">
+      Connect to MCP servers and browse the plugin marketplace
+    </Card>
+  </CardGroup>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="text-center mb-12">
+    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Explore by Topic
+    </h2>
+    <p className="text-base text-gray-600 dark:text-gray-400">
+      Learn how to use 1Code for your workflow
+    </p>
+  </div>
+
+  <CardGroup cols={2}>
+    <Card title="Working with Worktrees" icon="git-alt" href="/guides/working-with-worktrees">
+      Understand how 1Code uses git worktrees to isolate your work
+    </Card>
+    <Card title="Setting Up MCP Servers" icon="server" href="/guides/setting-up-mcp-servers">
+      Connect external tools and services via Model Context Protocol
+    </Card>
+    <Card title="Automations" icon="robot" href="/guides/automations">
+      Trigger agents from GitHub, Linear, or Slack automatically
+    </Card>
+    <Card title="Git Integration" icon="code-merge" href="/guides/git-integration">
+      Use the built-in git client to stage, commit, and push changes
+    </Card>
+  </CardGroup>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="rounded-2xl border border-gray-200 dark:border-[#27272a] bg-gray-50 dark:bg-[#1a1d27] p-8 sm:p-12">
+    <div className="text-center">
+      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
+        Ready to Get Started?
+      </h2>
+      <p className="text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-6">
+        Download 1Code and start working with AI coding agents today
+      </p>
+      <div className="flex flex-wrap justify-center gap-4">
+        <a 
+          href="/quickstart" 
+          className="inline-flex items-center px-6 py-3 bg-[#6366f1] text-white font-semibold rounded-lg hover:bg-[#4f46e5] transition-colors no-underline"
+        >
+          Get Started
+        </a>
+        <a 
+          href="https://github.com/21st-dev/1code" 
+          className="inline-flex items-center px-6 py-3 border border-gray-300 dark:border-[#27272a] bg-white dark:bg-[#242838] text-gray-900 dark:text-white font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-[#2a2f42] transition-colors no-underline"
+        >
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="text-center mb-12">
+    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Community & Support
+    </h2>
+  </div>
+
+  <CardGroup cols={2}>
+    <Card title="Join Discord" icon="discord" href="https://discord.gg/8ektTZGnj4">
+      Get help, share feedback, and connect with the community
+    </Card>
+    <Card title="GitHub Discussions" icon="github" href="https://github.com/21st-dev/1code/discussions">
+      Ask questions and discuss feature requests
+    </Card>
+  </CardGroup>
+</div>

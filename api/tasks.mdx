@@ -1,0 +1,284 @@
+---
+title: Tasks
+description: Create and manage agent tasks via the REST API
+---
+
+## Create Task
+
+Create a new agent task to run in a cloud sandbox.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://1code.dev/api/v1/tasks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repository": "https://github.com/your-org/your-repo",
+    "prompt": "Fix the failing CI tests in the auth module",
+    "branch": "main",
+    "model": "claude-sonnet-4"
+  }'
+```
+
+```javascript Node.js
+const response = await fetch('https://1code.dev/api/v1/tasks', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    repository: 'https://github.com/your-org/your-repo',
+    prompt: 'Fix the failing CI tests in the auth module',
+    branch: 'main',
+    model: 'claude-sonnet-4'
+  })
+});
+
+const task = await response.json();
+console.log('Task ID:', task.id);
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://1code.dev/api/v1/tasks',
+    headers={
+        'Authorization': 'Bearer YOUR_API_KEY',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'repository': 'https://github.com/your-org/your-repo',
+        'prompt': 'Fix the failing CI tests in the auth module',
+        'branch': 'main',
+        'model': 'claude-sonnet-4'
+    }
+)
+
+task = response.json()
+print(f"Task ID: {task['id']}")
+```
+</CodeGroup>
+
+### Request Body
+
+<ParamField body="repository" type="string" required>
+  GitHub repository URL (HTTPS or SSH format)
+</ParamField>
+
+<ParamField body="prompt" type="string" required>
+  Task description for the agent
+</ParamField>
+
+<ParamField body="branch" type="string" default="main">
+  Base branch to work from
+</ParamField>
+
+<ParamField body="model" type="string" default="claude-sonnet-4">
+  AI model to use. Options: `claude-sonnet-4`, `claude-opus-4`, `codex`
+</ParamField>
+
+<ParamField body="webhook_url" type="string">
+  URL to receive webhook notifications when the task completes
+</ParamField>
+
+<ParamField body="auto_merge" type="boolean" default={false}>
+  Automatically merge the PR if all checks pass
+</ParamField>
+
+### Response
+
+<ResponseField name="id" type="string">
+  Unique task identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current task status: `queued`, `running`, `completed`, `failed`
+</ResponseField>
+
+<ResponseField name="repository" type="string">
+  Repository URL
+</ResponseField>
+
+<ResponseField name="prompt" type="string">
+  Task prompt
+</ResponseField>
+
+<ResponseField name="branch" type="string">
+  Base branch
+</ResponseField>
+
+<ResponseField name="model" type="string">
+  AI model used
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp
+</ResponseField>
+
+<ResponseField name="sandbox_url" type="string">
+  Live browser preview URL (available when sandbox is ready)
+</ResponseField>
+
+---
+
+## Get Task
+
+Retrieve the status and details of a specific task.
+
+```bash
+curl https://1code.dev/api/v1/tasks/task_abc123 \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Response
+
+<ResponseField name="id" type="string">
+  Task identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current status: `queued`, `running`, `completed`, `failed`
+</ResponseField>
+
+<ResponseField name="pr_url" type="string">
+  GitHub pull request URL (available when PR is created)
+</ResponseField>
+
+<ResponseField name="pr_number" type="number">
+  GitHub pull request number
+</ResponseField>
+
+<ResponseField name="sandbox_url" type="string">
+  Live browser preview URL
+</ResponseField>
+
+<ResponseField name="commits" type="array">
+  Array of commit objects with `sha`, `message`, and `timestamp`
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if task failed
+</ResponseField>
+
+<ResponseField name="completed_at" type="string">
+  ISO 8601 timestamp when task completed
+</ResponseField>
+
+---
+
+## Send Follow-up Message
+
+Send additional instructions to a running task.
+
+```bash
+curl -X POST https://1code.dev/api/v1/tasks/task_abc123/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Also add unit tests for the fixed code"
+  }'
+```
+
+### Request Body
+
+<ParamField body="message" type="string" required>
+  Follow-up instruction for the agent
+</ParamField>
+
+### Response
+
+<ResponseField name="message_id" type="string">
+  Unique message identifier
+</ResponseField>
+
+<ResponseField name="task_id" type="string">
+  Parent task identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Message processing status
+</ResponseField>
+
+---
+
+## List Tasks
+
+Retrieve all tasks for your account.
+
+```bash
+curl https://1code.dev/api/v1/tasks \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Query Parameters
+
+<ParamField query="status" type="string">
+  Filter by status: `queued`, `running`, `completed`, `failed`
+</ParamField>
+
+<ParamField query="repository" type="string">
+  Filter by repository URL
+</ParamField>
+
+<ParamField query="limit" type="number" default={50}>
+  Number of tasks to return (max 100)
+</ParamField>
+
+<ParamField query="offset" type="number" default={0}>
+  Pagination offset
+</ParamField>
+
+### Response
+
+<ResponseField name="tasks" type="array">
+  Array of task objects
+</ResponseField>
+
+<ResponseField name="total" type="number">
+  Total number of tasks matching the filters
+</ResponseField>
+
+<ResponseField name="limit" type="number">
+  Number of tasks returned
+</ResponseField>
+
+<ResponseField name="offset" type="number">
+  Pagination offset
+</ResponseField>
+
+---
+
+## Cancel Task
+
+Cancel a running task.
+
+```bash
+curl -X POST https://1code.dev/api/v1/tasks/task_abc123/cancel \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Response
+
+<ResponseField name="id" type="string">
+  Task identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Updated status: `cancelled`
+</ResponseField>
+
+<ResponseField name="cancelled_at" type="string">
+  ISO 8601 timestamp
+</ResponseField>
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| 400 | Invalid request parameters |
+| 401 | Missing or invalid API key |
+| 404 | Task not found |
+| 429 | Rate limit exceeded |
+| 500 | Internal server error |

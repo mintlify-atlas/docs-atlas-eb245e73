@@ -1,0 +1,289 @@
+---
+title: Changelog
+description: Release history and changes for 1Code
+---
+
+## Latest Release
+
+Current version: **0.0.72**
+
+<Note>
+  Check [GitHub Releases](https://github.com/21st-dev/1code/releases) for the complete release history with download links.
+</Note>
+
+## Release Process
+
+1Code follows semantic versioning for releases. Here's how new versions are created and distributed:
+
+### Version Bumping
+
+Before creating a release, bump the version in `package.json`:
+
+```bash
+# Patch version (0.0.27 → 0.0.28)
+npm version patch --no-git-tag-version
+
+# Minor version (0.0.72 → 0.1.0)
+npm version minor --no-git-tag-version
+
+# Major version (0.0.72 → 1.0.0)
+npm version major --no-git-tag-version
+```
+
+### Building a Release
+
+<Steps>
+  <Step title="Prerequisites">
+    **For macOS notarization:**
+    - Apple Developer account
+    - Code signing certificate installed
+    - Notarization profile configured:
+    ```bash
+    xcrun notarytool store-credentials "21st-notarize" \
+      --apple-id YOUR_APPLE_ID \
+      --team-id YOUR_TEAM_ID
+    ```
+  </Step>
+
+  <Step title="Run release script">
+    The release script handles the complete build pipeline:
+    ```bash
+    bun run release
+    ```
+
+    This command:
+    - Cleans previous builds (`rm -rf release`)
+    - Installs dependencies
+    - Downloads Claude and Codex binaries
+    - Compiles TypeScript
+    - Packages for macOS (DMG + ZIP for arm64 and x64)
+    - Generates update manifests
+    - Uploads to CDN (if configured)
+  </Step>
+
+  <Step title="Wait for notarization">
+    Apple's notarization process takes 2-5 minutes:
+    ```bash
+    # Check notarization status
+    xcrun notarytool history --keychain-profile "21st-notarize"
+    ```
+  </Step>
+
+  <Step title="Staple notarization ticket">
+    After notarization completes, staple the ticket to the DMGs:
+    ```bash
+    cd release
+    xcrun stapler staple *.dmg
+    ```
+
+    <Note>
+      Stapling embeds the notarization ticket in the DMG, so users can install without an internet connection.
+    </Note>
+  </Step>
+
+  <Step title="Upload to GitHub">
+    Create a GitHub release and upload the artifacts:
+    ```bash
+    gh release create v0.0.X \
+      --title "Release 0.0.X" \
+      --notes "Release notes here" \
+      release/*.dmg \
+      release/*.zip
+    ```
+  </Step>
+
+  <Step title="Upload manifests (triggers auto-updates)">
+    <Warning>
+      This step makes the update available to all users. Only run after testing!
+    </Warning>
+
+    Upload the update manifests to your CDN:
+    ```bash
+    # Example with R2/Cloudflare
+    wrangler r2 object put desktop-releases/latest-mac.yml \
+      --file release/latest-mac.yml
+    wrangler r2 object put desktop-releases/latest-mac-x64.yml \
+      --file release/latest-mac-x64.yml
+    ```
+  </Step>
+
+  <Step title="Sync to public repo">
+    If you maintain a public version:
+    ```bash
+    ./scripts/sync-to-public.sh
+    ```
+  </Step>
+</Steps>
+
+### Build Artifacts
+
+Each release creates the following files:
+
+| File | Purpose | Audience |
+|------|---------|----------|
+| `latest-mac.yml` | Update manifest for arm64 | Auto-updater |
+| `latest-mac-x64.yml` | Update manifest for Intel | Auto-updater |
+| `1Code-{version}-arm64-mac.zip` | Auto-update payload (arm64) | Auto-updater |
+| `1Code-{version}-mac.zip` | Auto-update payload (Intel) | Auto-updater |
+| `1Code-{version}-arm64.dmg` | Manual installer (arm64) | Users |
+| `1Code-{version}.dmg` | Manual installer (Intel) | Users |
+
+### Auto-Update Flow
+
+Electron's auto-updater checks for new versions:
+
+1. App checks `https://cdn.21st.dev/releases/desktop/latest-mac.yml` on:
+   - App startup
+   - Window regains focus (with 1 min cooldown)
+2. If manifest version > current version:
+   - Shows "Update Available" banner
+   - Downloads ZIP in background
+3. User clicks "Restart Now":
+   - Installs update
+   - Restarts app
+
+<Note>
+  Auto-updates only work for signed builds distributed through 1code.dev. Open source builds don't include auto-update functionality.
+</Note>
+
+## Development Builds
+
+For testing during development:
+
+```bash
+bun run release:dev
+```
+
+This creates a development build without uploading to CDN.
+
+## Platform-Specific Builds
+
+```bash
+# macOS only
+bun run package:mac
+
+# Windows only
+bun run package:win
+
+# Linux only
+bun run package:linux
+
+# All platforms (requires appropriate build environment)
+bun run dist
+```
+
+### Windows Builds
+
+Windows builds create:
+- **NSIS installer** (recommended for most users)
+- **Portable EXE** (no installation required)
+
+### Linux Builds
+
+Linux builds create:
+- **AppImage** (universal, no installation required)
+- **DEB package** (for Debian/Ubuntu)
+
+## What Gets Packaged
+
+<AccordionGroup>
+  <Accordion title="Source code" icon="code">
+    - Compiled TypeScript from `out/` directory
+    - Main, preload, and renderer bundles
+    - All production dependencies from `node_modules/`
+  </Accordion>
+
+  <Accordion title="Native modules" icon="microchip">
+    These are unpacked from ASAR for direct filesystem access:
+    - `better-sqlite3` (database)
+    - `node-pty` (terminal)
+    - `@anthropic-ai/claude-agent-sdk` (Claude Code)
+    - `@zed-industries/codex-acp` (Codex)
+  </Accordion>
+
+  <Accordion title="Agent binaries" icon="download">
+    Platform-specific binaries from `resources/bin/`:
+    - Claude Code binary (2.1.45)
+    - Codex binary (0.98.0)
+    - `VERSION` file
+  </Accordion>
+
+  <Accordion title="Database migrations" icon="database">
+    SQL migrations from `drizzle/` → `resources/migrations/`
+
+    These run automatically on app startup to migrate the database schema.
+  </Accordion>
+
+  <Accordion title="Assets" icon="image">
+    - App icons (ICNS for macOS, ICO for Windows, PNG for Linux)
+    - Entitlements file (macOS code signing)
+    - DMG background image
+  </Accordion>
+</AccordionGroup>
+
+## Release Checklist
+
+Before releasing a new version:
+
+- [ ] Bump version in `package.json`
+- [ ] Update changelog (this page or `CHANGELOG.md`)
+- [ ] Test build locally: `bun run release:dev`
+- [ ] Verify agent binaries are downloaded
+- [ ] Run on clean VM or fresh install simulation
+- [ ] Test auto-update flow (if applicable)
+- [ ] Check database migration works on existing databases
+- [ ] Verify git worktree operations
+- [ ] Test all major features (chat, terminal, MCP, etc.)
+- [ ] Run full release: `bun run release`
+- [ ] Wait for notarization
+- [ ] Staple DMGs
+- [ ] Upload to GitHub Releases
+- [ ] Upload manifests to CDN (triggers auto-updates)
+- [ ] Test download and installation
+- [ ] Announce on Discord
+- [ ] Update docs if needed
+
+## Rollback Procedure
+
+If a release has critical bugs:
+
+1. **Stop auto-updates immediately:**
+   ```bash
+   # Remove or replace manifests
+   wrangler r2 object delete desktop-releases/latest-mac.yml
+   wrangler r2 object delete desktop-releases/latest-mac-x64.yml
+   ```
+
+2. **Re-upload previous version manifests:**
+   ```bash
+   # From previous release directory
+   wrangler r2 object put desktop-releases/latest-mac.yml \
+     --file release-backup/latest-mac.yml
+   ```
+
+3. **Communicate to users:**
+   - Post in Discord
+   - Update GitHub release notes
+   - Provide manual downgrade instructions if needed
+
+## Version History
+
+For detailed release notes, changelogs, and download links for all versions, visit:
+
+<Card title="GitHub Releases" icon="github" href="https://github.com/21st-dev/1code/releases">
+  View complete version history with release notes and downloadable artifacts
+</Card>
+
+## Contributing to Releases
+
+If you're maintaining a fork or contributing to releases:
+
+1. Follow the [Contributing Guide](/resources/contributing)
+2. Test builds thoroughly before submitting PRs
+3. Update version numbers appropriately
+4. Document breaking changes clearly
+5. Include migration guides for major versions
+
+<Note>
+  The core team handles official releases and distribution. Community members can build and distribute their own forks under the Apache 2.0 license.
+</Note>

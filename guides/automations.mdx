@@ -1,0 +1,651 @@
+---
+title: "Automations"
+description: "Setting up automations from GitHub, Linear, and Slack to trigger agents automatically"
+---
+
+## What are Automations?
+
+Automations let you trigger AI coding agents automatically in response to events:
+
+- **GitHub**: New issues, PR reviews, CI failures, commits
+- **Linear**: Issue status changes, new bugs, sprint planning
+- **Slack**: @1code mentions in channels
+- **Git events**: Push, merge, tag creation
+- **Manual**: Trigger on-demand from the UI or API
+
+Perfect for:
+- Auto-reviewing pull requests
+- Fixing CI failures overnight
+- Triaging incoming bugs
+- Keeping documentation in sync
+- Automated dependency updates
+
+<Info>
+Automations require a [Pro or Max subscription](https://1code.dev/pro). Learn more at [1code.dev/agents/async](https://1code.dev/agents/async).
+</Info>
+
+## How Automations Work
+
+<Steps>
+  <Step title="Event trigger">
+    An event occurs (e.g., new GitHub issue is created).
+  </Step>
+
+  <Step title="Condition check">
+    1Code evaluates your conditions:
+    - Labels match filter
+    - Title contains keywords
+    - Author meets criteria
+    - Custom logic matches
+  </Step>
+
+  <Step title="Agent launch">
+    If conditions match, 1Code:
+    - Spins up a background agent
+    - Clones the repository
+    - Passes context from the trigger event
+    - Starts executing the automation task
+  </Step>
+
+  <Step title="Work execution">
+    Agent works autonomously:
+    - Analyzes the issue/PR
+    - Makes code changes
+    - Runs tests
+    - Commits and pushes
+    - Comments on the issue/PR
+  </Step>
+
+  <Step title="Notification">
+    You're notified when complete:
+    - Comment on original issue/PR
+    - Slack message
+    - Email notification
+    - In-app alert
+  </Step>
+</Steps>
+
+## Creating Your First Automation
+
+<Steps>
+  <Step title="Navigate to automations">
+    Click **Automations** in the sidebar or go to **Settings** > **Automations**.
+  </Step>
+
+  <Step title="Choose a template">
+    Start with a pre-built template:
+    
+    **Popular templates:**
+    - **PR Reviewer**: Review pull requests automatically
+    - **CI Fixer**: Fix failing test suites
+    - **Bug Triager**: Analyze and categorize new bugs
+    - **Dependency Updater**: Keep dependencies current
+    - **Docs Sync**: Update docs when code changes
+  </Step>
+
+  <Step title="Configure trigger">
+    Select what event starts the automation:
+    
+    **GitHub triggers:**
+    - Issues opened
+    - Issues labeled
+    - Pull request opened
+    - Pull request review requested
+    - Check suite failed
+    - Push to branch
+    
+    **Linear triggers:**
+    - Issue created
+    - Issue status changed
+    - Issue assigned
+    - Cycle started
+    
+    **Slack triggers:**
+    - @1code mentioned
+    - Keyword in channel
+  </Step>
+
+  <Step title="Set conditions">
+    Narrow when the automation runs:
+    
+    **Example conditions:**
+    ```yaml
+    # GitHub issue
+    labels.includes("bug")
+    && labels.includes("automated-fix")
+    && !draft
+    
+    # Pull request
+    baseBranch === "main"
+    && author.type !== "bot"
+    && files.length < 10
+    
+    # Linear issue
+    state.name === "In Progress"
+    && team.key === "ENG"
+    ```
+  </Step>
+
+  <Step title="Write instructions">
+    Tell the agent what to do:
+    
+    **Good automation prompts:**
+    - "Review this PR for security issues, code quality, and test coverage. Leave detailed comments on specific lines that need improvement."
+    - "The CI failed on this commit. Analyze the error logs, fix the issue, and ensure all tests pass before pushing."
+    - "This bug report describes a crash. Reproduce it, find the root cause, and implement a fix with tests."
+    
+    **Use template variables:**
+    - `{{issue.title}}` - Issue title
+    - `{{issue.body}}` - Issue description
+    - `{{pr.number}}` - PR number
+    - `{{pr.files}}` - Changed files
+    - `{{author.username}}` - Who triggered it
+  </Step>
+
+  <Step title="Choose agent and model">
+    Select which AI to use:
+    - **Claude Code**: Best for complex reviews and refactoring
+    - **Codex**: Faster for targeted fixes
+  </Step>
+
+  <Step title="Set behavior options">
+    Configure how the agent works:
+    
+    **Silent mode**: Don't comment until done (avoid spam)
+    **Auto-commit**: Commit changes automatically
+    **Create PR**: Open PR instead of pushing to branch
+    **Run tests**: Always run test suite before finishing
+    **Notify on**: Success, failure, or both
+  </Step>
+
+  <Step title="Test and activate">
+    Click **Test** to run a dry-run, then **Activate** when ready.
+  </Step>
+</Steps>
+
+## Automation Templates
+
+### Auto PR Reviewer
+
+Reviews pull requests and leaves inline comments:
+
+**Trigger**: Pull request opened OR review requested
+
+**Conditions**:
+```yaml
+baseBranch === "main"
+&& !draft
+&& author.type !== "bot"
+```
+
+**Instructions**:
+```
+Review this pull request thoroughly:
+
+1. Check for security vulnerabilities
+2. Verify test coverage for new code
+3. Look for potential bugs or edge cases
+4. Suggest improvements to code quality
+5. Verify documentation is updated
+
+Leave specific inline comments on lines that need attention.
+Approve if everything looks good, otherwise request changes.
+
+PR: {{pr.url}}
+Files changed: {{pr.files}}
+```
+
+### CI Failure Fixer
+
+Automatically fixes failing CI builds:
+
+**Trigger**: Check suite failed
+
+**Conditions**:
+```yaml
+check.name.includes("test")
+&& branch !== "main"
+&& branch !== "master"
+```
+
+**Instructions**:
+```
+The CI build failed on this commit:
+
+Commit: {{commit.sha}}
+Branch: {{branch}}
+Check: {{check.name}}
+
+Steps:
+1. Analyze the failure logs
+2. Identify the root cause
+3. Fix the failing tests or code
+4. Run tests locally to verify
+5. Commit and push the fix
+6. Comment on the commit with a summary
+
+Logs:
+{{check.output}}
+```
+
+### Bug Triager
+
+Analyzes and categorizes new bug reports:
+
+**Trigger**: GitHub issue opened
+
+**Conditions**:
+```yaml
+labels.includes("bug")
+&& !labels.includes("triaged")
+```
+
+**Instructions**:
+```
+Triage this bug report:
+
+Issue: {{issue.title}}
+Description: {{issue.body}}
+
+1. Verify it's a valid bug (not feature request or question)
+2. Determine severity: critical, high, medium, low
+3. Identify affected component/module
+4. Check for duplicates
+5. Add appropriate labels
+6. If you can reproduce it, attempt a fix
+7. Leave a comment with your analysis
+
+Add labels based on findings and mark as "triaged" when done.
+```
+
+### Dependency Updater
+
+Keeps dependencies up-to-date weekly:
+
+**Trigger**: Manual + Scheduled (weekly)
+
+**Conditions**: None (always runs)
+
+**Instructions**:
+```
+Update project dependencies:
+
+1. Run dependency update tool (npm update, yarn upgrade, etc.)
+2. Update to latest compatible versions
+3. Run full test suite after each major update
+4. Fix any breaking changes
+5. Update lockfiles
+6. Create a PR with changes
+7. Include changelog in PR description
+
+Be conservative - prefer patch and minor updates over major.
+If tests fail, roll back that dependency and note in PR.
+```
+
+### Docs Sync
+
+Updates documentation when code changes:
+
+**Trigger**: Push to main branch
+
+**Conditions**:
+```yaml
+files.some(f => f.startsWith("src/") || f.startsWith("lib/"))
+&& !message.includes("[skip docs]")
+```
+
+**Instructions**:
+```
+Code was pushed to main. Update documentation if needed:
+
+Commit: {{commit.message}}
+Files: {{files}}
+
+1. Review changed code files
+2. Check if corresponding documentation exists
+3. Update docs to reflect code changes
+4. Update API references if public APIs changed
+5. Fix any broken links
+6. Commit doc changes to a new branch
+7. Create PR linking back to the original commit
+
+Only update docs if code changes affect public interfaces or behavior.
+```
+
+## Connecting Integrations
+
+### GitHub
+
+<Steps>
+  <Step title="Install GitHub app">
+    Go to **Settings** > **Integrations** > **GitHub** > **Connect**.
+  </Step>
+
+  <Step title="Authorize 1Code">
+    Grant permissions:
+    - Read repository contents
+    - Read and write issues
+    - Read and write pull requests
+    - Read checks
+    - Receive webhooks
+  </Step>
+
+  <Step title="Select repositories">
+    Choose which repositories can trigger automations:
+    - All repositories
+    - Only select repositories
+  </Step>
+
+  <Step title="Test connection">
+    Create a test automation and trigger it manually to verify.
+  </Step>
+</Steps>
+
+### Linear
+
+<Steps>
+  <Step title="Connect Linear account">
+    **Settings** > **Integrations** > **Linear** > **Connect**.
+  </Step>
+
+  <Step title="Authorize access">
+    Grant 1Code permission to:
+    - Read issues
+    - Update issue status
+    - Write comments
+    - Receive webhooks
+  </Step>
+
+  <Step title="Map teams">
+    Link Linear teams to GitHub repositories.
+  </Step>
+
+  <Step title="Test webhook">
+    Create/update a Linear issue to test.
+  </Step>
+</Steps>
+
+### Slack
+
+<Steps>
+  <Step title="Add Slack app">
+    **Settings** > **Integrations** > **Slack** > **Add to Slack**.
+  </Step>
+
+  <Step title="Choose channels">
+    Invite @1code bot to channels where you want to trigger agents:
+    ```
+    /invite @1code
+    ```
+  </Step>
+
+  <Step title="Set up mentions">
+    Mention @1code in any message to trigger an automation:
+    ```
+    @1code review this PR: https://github.com/org/repo/pull/123
+    ```
+  </Step>
+
+  <Step title="Configure responses">
+    Control how 1Code responds in Slack (DM, thread, channel).
+  </Step>
+</Steps>
+
+## Managing Automations
+
+### Viewing Automation History
+
+See all past executions:
+
+1. Go to **Automations** page
+2. Click on an automation
+3. View **Execution Timeline**:
+   - When it ran
+   - What triggered it
+   - Success/failure status
+   - Link to the agent chat
+   - Time taken
+   - Resources used
+
+### Pausing Automations
+
+Temporarily disable without deleting:
+
+1. Find automation in list
+2. Toggle **Enabled** switch off
+3. No new executions will trigger
+4. Re-enable anytime
+
+**Use cases:**
+- During maintenance windows
+- When costs are high
+- To debug issues
+- Seasonal automation (e.g., only during sprints)
+
+### Editing Automations
+
+Update existing automations:
+
+1. Click automation name
+2. Click **Edit**
+3. Modify triggers, conditions, or instructions
+4. Click **Save**
+5. Changes take effect immediately
+
+**Note**: Editing doesn't affect currently running executions.
+
+### Deleting Automations
+
+1. Click three-dot menu
+2. Select **Delete**
+3. Confirm deletion
+4. Webhooks are removed automatically
+
+## Advanced Configuration
+
+### Custom Condition Logic
+
+Use JavaScript expressions for complex conditions:
+
+```javascript
+// Multiple labels required
+labels.includes("bug") && labels.includes("p0")
+
+// Title matching
+title.toLowerCase().includes("security") ||
+title.includes("[URGENT]")
+
+// File-based triggers
+files.some(f => f.endsWith(".sql")) &&
+files.length < 5
+
+// Author restrictions
+author.username !== "dependabot" &&
+author.type !== "Bot"
+
+// Size limits
+additions + deletions < 500
+
+// Time-based (using helper)
+isBusinessHours() && !isWeekend()
+```
+
+**Available variables:**
+- `issue`: GitHub issue object
+- `pr`: Pull request object
+- `commit`: Commit object
+- `files`: Array of changed files
+- `labels`: Array of label names
+- `author`: User who triggered
+- `baseBranch`, `headBranch`: Branch names
+- `additions`, `deletions`: Line counts
+
+### Template Variables
+
+Inject event data into prompts:
+
+```markdown
+# GitHub PR
+{{pr.title}}
+{{pr.body}}
+{{pr.url}}
+{{pr.number}}
+{{pr.files}}
+{{pr.author.username}}
+{{pr.baseBranch}}
+{{pr.headBranch}}
+
+# GitHub Issue
+{{issue.title}}
+{{issue.body}}
+{{issue.number}}
+{{issue.labels}}
+{{issue.assignees}}
+{{issue.author.username}}
+
+# Linear Issue
+{{linear.title}}
+{{linear.description}}
+{{linear.state}}
+{{linear.team}}
+{{linear.url}}
+
+# Commit
+{{commit.sha}}
+{{commit.message}}
+{{commit.author}}
+{{commit.files}}
+```
+
+### Chaining Automations
+
+Trigger automations from other automations:
+
+```markdown
+At the end of your task, create a GitHub issue titled
+"Follow-up: {{task.description}}" with label "automated-follow-up".
+
+This will trigger the next automation in the chain.
+```
+
+### Rate Limiting
+
+Prevent runaway costs:
+
+**Per automation:**
+- Max executions per hour: 10
+- Max executions per day: 50
+- Max concurrent runs: 3
+
+**Global limits:**
+- Pro: 100 executions/day
+- Max: 500 executions/day
+
+Exceeded limits queue executions for later.
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Specific Conditions" icon="filter">
+    Use tight filters to avoid triggering on every event. Narrow by labels, branches, or keywords.
+  </Card>
+  
+  <Card title="Silent Mode" icon="volume-xmark">
+    Enable silent mode for automations that run frequently to avoid comment spam.
+  </Card>
+  
+  <Card title="Test First" icon="vial">
+    Always test automations manually before enabling automatic triggers.
+  </Card>
+  
+  <Card title="Monitor Costs" icon="dollar-sign">
+    Check execution history regularly to ensure automations aren't running more than expected.
+  </Card>
+  
+  <Card title="Descriptive Names" icon="tag">
+    Name automations clearly: "PR Reviewer (security)" not "Automation 1".
+  </Card>
+  
+  <Card title="Version Control" icon="code-branch">
+    Export automation configs and commit to your repo for team collaboration.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Automation not triggering">
+    **Check:**
+    1. Automation is enabled (toggle switch is on)
+    2. Conditions are being met (test with manual trigger)
+    3. Webhook is properly connected (check integration settings)
+    4. Rate limits haven't been exceeded
+    5. Repository is included in GitHub app installation
+    
+    **Debug**: View execution history for error messages.
+  </Accordion>
+  
+  <Accordion title="Triggering too often">
+    **Solution**: Refine conditions to be more specific:
+    ```javascript
+    // Before (too broad)
+    labels.includes("bug")
+    
+    // After (more specific)
+    labels.includes("bug") &&
+    labels.includes("auto-fix") &&
+    !draft &&
+    additions < 100
+    ```
+  </Accordion>
+  
+  <Accordion title="Agent is confused by event context">
+    **Solution**: Improve prompt to explain the context:
+    ```markdown
+    You're an automation triggered by a GitHub issue.
+    
+    The user reported: "{{issue.body}}"
+    
+    Your job is to [specific task].
+    Do NOT ask questions - work autonomously.
+    ```
+  </Accordion>
+  
+  <Accordion title="Webhook delivery failed">
+    **Cause**: 1Code couldn't receive the webhook from GitHub/Linear/Slack.
+    
+    **Solution**:
+    1. Check webhook settings in the platform (GitHub Settings > Webhooks)
+    2. Verify webhook URL is correct: `https://1code.dev/webhooks/v1/[provider]`
+    3. Re-authenticate integration in 1Code settings
+    4. Check webhook delivery history for error details
+  </Accordion>
+  
+  <Accordion title="Exceeded rate limits">
+    **Solution**:
+    - Increase rate limits in automation settings
+    - Upgrade to Max plan for higher limits
+    - Refine conditions to reduce unnecessary triggers
+    - Use manual triggers for high-volume automations
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Background Agents" icon="cloud" href="/guides/using-background-agents">
+    Learn how automations use background agents to run independently.
+  </Card>
+  
+  <Card title="API Access" icon="code" href="/api/overview">
+    Trigger automations programmatically via the 1Code API.
+  </Card>
+  
+  <Card title="MCP Servers" icon="plug" href="/guides/setting-up-mcp-servers">
+    Connect external tools that automations can use.
+  </Card>
+  
+  <Card title="Webhooks" icon="webhook" href="/api/webhooks">
+    Create custom webhooks for your own services.
+  </Card>
+</CardGroup>

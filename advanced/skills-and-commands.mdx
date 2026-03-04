@@ -1,0 +1,505 @@
+---
+title: 'Skills & Slash Commands'
+description: 'Create custom skills and slash commands to extend agent capabilities'
+icon: 'wand-magic-sparkles'
+---
+
+1Code supports custom skills and slash commands to extend agent behavior and create reusable workflows.
+
+## Overview
+
+Skills and slash commands help you:
+- Define reusable agent instructions
+- Create shortcuts for common workflows
+- Share best practices across your team
+- Standardize agent behavior for specific tasks
+
+## Skills
+
+Skills are markdown files that provide context and instructions to agents. They're loaded automatically when you mention them with `@skill-name`.
+
+### Creating Skills
+
+Skills are stored in `.claude/skills/` directories:
+
+- **User skills**: `~/.claude/skills/` (available in all projects)
+- **Project skills**: `.claude/skills/` (specific to one project)
+- **Plugin skills**: Provided by installed plugins
+
+### Skill File Structure
+
+Each skill is a directory containing a `SKILL.md` file:
+
+```
+~/.claude/skills/
+  └── my-skill/
+      └── SKILL.md
+```
+
+### SKILL.md Format
+
+Skills use markdown with YAML frontmatter:
+
+```markdown SKILL.md
+---
+name: my-skill
+description: A brief description of what this skill does
+---
+
+# Skill Instructions
+
+Provide detailed instructions, context, or guidelines here.
+This content will be included in the agent's context when the skill is mentioned.
+
+## Example Usage
+
+You can include:
+- Best practices
+- Code examples
+- Links to documentation
+- Project-specific conventions
+```
+
+### Skill Discovery
+
+From `/home/daytona/workspace/source/src/main/lib/trpc/routers/skills.ts:38-103`:
+
+```typescript
+async function scanSkillsDirectory(
+  dir: string,
+  source: "user" | "project" | "plugin",
+  basePath?: string,
+): Promise<FileSkill[]> {
+  const skills: FileSkill[] = []
+  const entries = await fs.readdir(dir, { withFileTypes: true })
+
+  for (const entry of entries) {
+    const isDir = await isDirentDirectory(dir, entry)
+    if (!isDir) continue
+
+    const skillMdPath = path.join(dir, entry.name, "SKILL.md")
+    const content = await fs.readFile(skillMdPath, "utf-8")
+    const parsed = parseSkillMd(content)
+
+    skills.push({
+      name: parsed.name || entry.name,
+      description: parsed.description || "",
+      source,
+      path: displayPath,
+      content: parsed.content,
+    })
+  }
+
+  return skills
+}
+```
+
+### Using Skills
+
+Mention skills in your chat with the `@` symbol:
+
+```
+@my-skill Please implement the feature following our conventions
+```
+
+The skill content is automatically included in the agent's context.
+
+### Example: Code Review Skill
+
+```markdown ~/.claude/skills/code-review/SKILL.md
+---
+name: code-review
+description: Standards for code review and quality checks
+---
+
+# Code Review Guidelines
+
+When reviewing code, check for:
+
+## Security
+- Input validation and sanitization
+- Authentication and authorization
+- Secrets management (no hardcoded keys)
+- SQL injection prevention
+
+## Code Quality
+- Clear variable and function names
+- Proper error handling
+- Comments for complex logic
+- DRY principle (Don't Repeat Yourself)
+
+## Performance
+- Efficient algorithms and data structures
+- Proper database indexing
+- Caching where appropriate
+- Memory leak prevention
+
+## Testing
+- Unit tests for critical functions
+- Integration tests for APIs
+- Edge cases covered
+- Mocking external dependencies
+```
+
+### Example: Project Architecture Skill
+
+```markdown .claude/skills/architecture/SKILL.md
+---
+name: architecture
+description: Our project's architecture and conventions
+---
+
+# Project Architecture
+
+## Directory Structure
+
+- `src/main/` - Electron main process
+- `src/renderer/` - React UI
+- `src/preload/` - Preload scripts
+- `src/shared/` - Shared types and utilities
+
+## Naming Conventions
+
+- **Components**: PascalCase (`UserProfile.tsx`)
+- **Utilities**: camelCase (`formatDate.ts`)
+- **Constants**: UPPER_SNAKE_CASE (`MAX_RETRIES`)
+- **Types**: PascalCase with `Type` suffix (`UserType`)
+
+## State Management
+
+We use Jotai for state management:
+- Atoms in `src/renderer/lib/atoms/`
+- Keep atoms focused and composable
+- Use `atomFamily` for dynamic state
+
+## Error Handling
+
+All async operations should handle errors:
+```typescript
+try {
+  const result = await operation()
+  return { success: true, data: result }
+} catch (error) {
+  console.error("[Context]", error)
+  return { success: false, error: error.message }
+}
+```
+```
+
+## Slash Commands
+
+Slash commands are shortcuts that trigger specific agent behaviors or insert predefined prompts.
+
+### Built-in Commands
+
+1Code includes several built-in slash commands:
+
+<AccordionGroup>
+  <Accordion title="/clear" icon="broom">
+    Start a new conversation (creates new sub-chat)
+  </Accordion>
+
+  <Accordion title="/plan" icon="list-check">
+    Switch to Plan mode (creates plan before making changes)
+  </Accordion>
+
+  <Accordion title="/agent" icon="robot">
+    Switch to Agent mode (applies changes directly)
+  </Accordion>
+
+  <Accordion title="/compact" icon="compress">
+    Compact conversation context to reduce token usage
+  </Accordion>
+
+  <Accordion title="/review" icon="magnifying-glass">
+    Ask agent to review your code for quality, bugs, and improvements
+  </Accordion>
+
+  <Accordion title="/pr-comments" icon="comments">
+    Generate detailed PR review comments for current changes
+  </Accordion>
+
+  <Accordion title="/release-notes" icon="scroll">
+    Generate release notes summarizing codebase changes
+  </Accordion>
+
+  <Accordion title="/security-review" icon="shield">
+    Perform security audit to identify vulnerabilities and risks
+  </Accordion>
+
+  <Accordion title="/commit" icon="code-commit">
+    Commit staged changes without touching anything else
+  </Accordion>
+
+  <Accordion title="/worktree-setup" icon="tree">
+    Generate worktree setup config with AI assistance
+  </Accordion>
+</AccordionGroup>
+
+### Command Implementation
+
+From `/home/daytona/workspace/source/src/renderer/features/agents/commands/builtin-commands.ts:6-44`:
+
+```typescript
+export const COMMAND_PROMPTS: Partial<
+  Record<BuiltinCommandAction["type"], string>
+> = {
+  review:
+    "Please review the code in the current context and provide feedback on code quality, potential bugs, and improvements.",
+  "pr-comments":
+    "Generate detailed PR review comments for the changes in the current context.",
+  "release-notes":
+    "Generate release notes summarizing the changes in this codebase.",
+  "security-review":
+    "Perform a security audit of the code in the current context. Identify vulnerabilities, security risks, and suggest fixes.",
+  commit:
+    "Закоммить это аккуратно, не трогая больше ничего. Сделай коммит только для staged изменений.",
+}
+```
+
+### Custom Slash Commands
+
+You can create custom slash commands by combining skills with command patterns:
+
+#### Example: Deploy Command
+
+Create a skill that defines deployment workflow:
+
+```markdown ~/.claude/skills/deploy/SKILL.md
+---
+name: deploy
+description: Deployment checklist and procedures
+---
+
+# Deployment Procedure
+
+Before deploying:
+
+1. **Run Tests**
+   ```bash
+   npm run test
+   npm run lint
+   ```
+
+2. **Build Production**
+   ```bash
+   npm run build
+   ```
+
+3. **Version Bump**
+   - Update package.json version
+   - Create git tag
+   - Update CHANGELOG.md
+
+4. **Deploy**
+   ```bash
+   npm run deploy:prod
+   ```
+
+5. **Verify**
+   - Check production URL
+   - Test critical paths
+   - Monitor error logs
+```
+
+Then use it: `@deploy Please prepare a deployment for v2.1.0`
+
+#### Example: Documentation Command
+
+```markdown ~/.claude/skills/docs/SKILL.md
+---
+name: docs
+description: Documentation standards and templates
+---
+
+# Documentation Standards
+
+## API Documentation
+
+All API endpoints must include:
+
+```typescript
+/**
+ * Brief description of what this endpoint does
+ * 
+ * @param {Type} paramName - Description
+ * @returns {Type} Description of return value
+ * @throws {ErrorType} When this error occurs
+ * @example
+ * ```
+ * const result = await myFunction(param)
+ * ```
+ */
+```
+
+## Component Documentation
+
+React components need:
+- Props interface with descriptions
+- Usage examples
+- Screenshots for UI components
+
+## README Sections
+
+Every module should have:
+1. Purpose and overview
+2. Installation/setup
+3. Usage examples
+4. API reference
+5. Contributing guidelines
+```
+
+Use: `@docs Please document this API endpoint`
+
+## Managing Skills
+
+### Creating Skills via UI
+
+1. Open Settings → Skills
+2. Click "Create Skill"
+3. Choose user or project scope
+4. Enter name, description, and content
+5. Save
+
+### Creating Skills Manually
+
+```bash
+# User skill (global)
+mkdir -p ~/.claude/skills/my-skill
+cat > ~/.claude/skills/my-skill/SKILL.md << 'EOF'
+---
+name: my-skill
+description: My custom skill
+---
+
+# Skill content here
+EOF
+
+# Project skill (local)
+mkdir -p .claude/skills/my-skill
+cat > .claude/skills/my-skill/SKILL.md << 'EOF'
+---
+name: my-skill
+description: Project-specific skill
+---
+
+# Skill content here
+EOF
+```
+
+### Skill Priority
+
+When multiple skills have the same name:
+
+1. **Project skills** (highest priority)
+2. **User skills**
+3. **Plugin skills** (lowest priority)
+
+### Sharing Skills
+
+Share skills with your team:
+
+**Option 1: Commit to repository**
+```bash
+git add .claude/skills/
+git commit -m "Add team skills"
+git push
+```
+
+**Option 2: Create a plugin**
+Package skills as a plugin for distribution across projects.
+
+**Option 3: Export and share**
+Zip the skill directory and share manually:
+```bash
+tar -czf my-skill.tar.gz ~/.claude/skills/my-skill/
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Keep skills focused" icon="bullseye">
+    Each skill should address one specific domain or task. Don't create mega-skills that try to do everything.
+  </Accordion>
+
+  <Accordion title="Use clear descriptions" icon="file-lines">
+    Write concise descriptions so users know when to use each skill. Good descriptions improve discoverability.
+  </Accordion>
+
+  <Accordion title="Include examples" icon="code">
+    Show concrete examples of expected input/output or usage patterns. Examples make skills easier to understand and use.
+  </Accordion>
+
+  <Accordion title="Version control project skills" icon="code-branch">
+    Commit project skills to git so the entire team uses consistent guidelines and workflows.
+  </Accordion>
+
+  <Accordion title="Iterate based on feedback" icon="arrows-rotate">
+    Review and update skills based on agent performance. If agents misunderstand instructions, clarify the skill.
+  </Accordion>
+</AccordionGroup>
+
+## Skill Discovery API
+
+Access skills programmatically via tRPC:
+
+```typescript
+// List all available skills
+const skills = await trpc.skills.list.query({ cwd: "/path/to/project" })
+
+// Create a new skill
+await trpc.skills.create.mutate({
+  name: "my-skill",
+  description: "Skill description",
+  content: "# Skill content",
+  source: "user", // or "project"
+  cwd: "/path/to/project"
+})
+
+// Update existing skill
+await trpc.skills.update.mutate({
+  path: "~/.claude/skills/my-skill/SKILL.md",
+  name: "my-skill",
+  description: "Updated description",
+  content: "# Updated content"
+})
+
+// Delete skill
+await trpc.skills.delete.mutate({
+  path: "~/.claude/skills/my-skill/SKILL.md"
+})
+```
+
+## Troubleshooting
+
+### Skill Not Found
+
+1. Check file path: `~/.claude/skills/skill-name/SKILL.md`
+2. Verify frontmatter format (YAML with `---` delimiters)
+3. Ensure directory name matches skill name
+4. Restart 1Code to refresh skill cache
+
+### Skill Not Working as Expected
+
+1. Test skill content clarity - be more explicit
+2. Add concrete examples to the skill
+3. Check for conflicting skills with similar names
+4. Use more specific mention: `@skill-name` instead of relying on auto-detection
+
+### Slash Command Not Appearing
+
+Built-in slash commands are hardcoded. For custom workflows:
+1. Create a skill with the workflow
+2. Mention the skill in your message
+3. Custom slash commands require plugin development
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/advanced/configuration">
+    Learn about advanced configuration options
+  </Card>
+  <Card title="MCP Integration" icon="plug" href="/features/mcp-integration">
+    Extend capabilities with MCP servers
+  </Card>
+</CardGroup>

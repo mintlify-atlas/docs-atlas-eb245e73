@@ -1,0 +1,558 @@
+---
+title: Chats Router
+description: Create and manage chat sessions, workspaces, and sub-chats in 1Code Desktop
+---
+
+## Overview
+
+The Chats router manages chat sessions (workspaces) and sub-chats. Each chat represents a workspace with an optional git worktree, and can contain multiple sub-chats (conversation threads).
+
+## Chat Structure
+
+- **Chat (Workspace)**: Top-level container with optional git worktree isolation
+- **Sub-Chat**: Individual conversation thread within a chat
+- **Messages**: Array of user and assistant messages within a sub-chat
+
+## Chat Methods
+
+### list
+
+List all non-archived chats, optionally filtered by project.
+
+```typescript
+const chats = await trpc.chats.list.query({
+  projectId: 'proj_123' // optional
+});
+```
+
+<ParamField query="projectId" type="string">
+  Filter chats by project ID
+</ParamField>
+
+**Returns:** `Chat[]` (ordered by most recently updated)
+
+---
+
+### listArchived
+
+List archived chats.
+
+```typescript
+const archived = await trpc.chats.listArchived.query({
+  projectId: 'proj_123' // optional
+});
+```
+
+<ParamField query="projectId" type="string">
+  Filter by project ID
+</ParamField>
+
+**Returns:** `Chat[]` (ordered by archive date)
+
+---
+
+### get
+
+Get a single chat with all sub-chats and project info.
+
+```typescript
+const chat = await trpc.chats.get.query({ id: 'chat_123' });
+
+if (chat) {
+  console.log('Chat:', chat.name);
+  console.log('Sub-chats:', chat.subChats.length);
+  console.log('Project:', chat.project?.name);
+}
+```
+
+<ParamField query="id" type="string" required>
+  Chat ID
+</ParamField>
+
+**Returns:** `ChatWithSubChatsAndProject | null`
+
+---
+
+### create
+
+Create a new chat with optional git worktree.
+
+```typescript
+const chat = await trpc.chats.create.mutate({
+  projectId: 'proj_123',
+  name: 'Fix authentication bug',
+  initialMessage: 'Help me fix the login flow',
+  useWorktree: true,
+  baseBranch: 'main',
+  mode: 'agent'
+});
+```
+
+<ParamField body="projectId" type="string" required>
+  Project ID
+</ParamField>
+
+<ParamField body="name" type="string">
+  Chat name (auto-generated if not provided)
+</ParamField>
+
+<ParamField body="initialMessage" type="string">
+  First user message
+</ParamField>
+
+<ParamField body="initialMessageParts" type="array">
+  Message parts (for images or file content)
+</ParamField>
+
+<ParamField body="model" type="string">
+  AI model to use
+</ParamField>
+
+<ParamField body="baseBranch" type="string">
+  Base branch for worktree (default: main)
+</ParamField>
+
+<ParamField body="branchType" type="enum" default="local">
+  `local` or `remote`
+</ParamField>
+
+<ParamField body="useWorktree" type="boolean" default={true}>
+  Create isolated git worktree
+</ParamField>
+
+<ParamField body="mode" type="enum" default="agent">
+  `agent` or `plan`
+</ParamField>
+
+**Returns:** `Chat & { subChats: SubChat[] }`
+
+---
+
+### rename
+
+Rename a chat.
+
+```typescript
+const chat = await trpc.chats.rename.mutate({
+  id: 'chat_123',
+  name: 'Authentication fixes'
+});
+```
+
+<ParamField body="id" type="string" required>
+  Chat ID
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  New name (min 1 character)
+</ParamField>
+
+---
+
+### archive
+
+Archive a chat and optionally delete its worktree.
+
+```typescript
+const chat = await trpc.chats.archive.mutate({
+  id: 'chat_123',
+  deleteWorktree: true
+});
+```
+
+<ParamField body="id" type="string" required>
+  Chat ID
+</ParamField>
+
+<ParamField body="deleteWorktree" type="boolean" default={false}>
+  Delete the git worktree to free disk space
+</ParamField>
+
+<Note>
+  Archiving also kills any terminal processes in the workspace.
+</Note>
+
+---
+
+### restore
+
+Restore an archived chat.
+
+```typescript
+const chat = await trpc.chats.restore.mutate({ id: 'chat_123' });
+```
+
+---
+
+### delete
+
+Permanently delete a chat with worktree cleanup.
+
+```typescript
+const deleted = await trpc.chats.delete.mutate({ id: 'chat_123' });
+```
+
+<Warning>
+  This permanently deletes the chat, all sub-chats, and the git worktree. This action cannot be undone.
+</Warning>
+
+---
+
+### archiveBatch
+
+Archive multiple chats at once.
+
+```typescript
+const archived = await trpc.chats.archiveBatch.mutate({
+  chatIds: ['chat_123', 'chat_456', 'chat_789']
+});
+```
+
+## Sub-Chat Methods
+
+### getSubChat
+
+Get a single sub-chat with its parent chat and project.
+
+```typescript
+const subChat = await trpc.chats.getSubChat.query({ id: 'sub_123' });
+```
+
+---
+
+### createSubChat
+
+Create a new sub-chat (conversation thread).
+
+```typescript
+const subChat = await trpc.chats.createSubChat.mutate({
+  chatId: 'chat_123',
+  name: 'Add tests',
+  mode: 'agent'
+});
+```
+
+<ParamField body="chatId" type="string" required>
+  Parent chat ID
+</ParamField>
+
+<ParamField body="name" type="string">
+  Sub-chat name
+</ParamField>
+
+<ParamField body="mode" type="enum" default="agent">
+  `agent` or `plan`
+</ParamField>
+
+---
+
+### forkSubChat
+
+Fork a sub-chat from a specific message, preserving SDK session context.
+
+```typescript
+const result = await trpc.chats.forkSubChat.mutate({
+  subChatId: 'sub_123',
+  messageId: 'msg_456',
+  name: 'Alternative approach' // optional
+});
+
+console.log('Forked sub-chat:', result.subChat.id);
+console.log('Forked', result.messageCount, 'messages');
+```
+
+<ParamField body="subChatId" type="string" required>
+  Source sub-chat ID
+</ParamField>
+
+<ParamField body="messageId" type="string" required>
+  Message ID to fork from
+</ParamField>
+
+<ParamField body="messageIndex" type="number">
+  Fallback message index (0-based)
+</ParamField>
+
+<ParamField body="name" type="string">
+  Custom name for forked sub-chat
+</ParamField>
+
+**Returns:**
+
+```typescript
+{
+  subChat: SubChat;
+  messageCount: number;
+  forkAtSdkUuid: string | null;
+}
+```
+
+---
+
+### updateSubChatMessages
+
+Update the messages array for a sub-chat.
+
+```typescript
+const subChat = await trpc.chats.updateSubChatMessages.mutate({
+  id: 'sub_123',
+  messages: JSON.stringify(messagesArray)
+});
+```
+
+---
+
+### rollbackToMessage
+
+Rollback to a specific message, reverting both git state and message history.
+
+```typescript
+const result = await trpc.chats.rollbackToMessage.mutate({
+  subChatId: 'sub_123',
+  sdkMessageUuid: 'uuid_456'
+});
+
+if (result.success) {
+  console.log('Rolled back to', result.messages.length, 'messages');
+} else {
+  console.error('Rollback failed:', result.error);
+}
+```
+
+<ParamField body="subChatId" type="string" required>
+  Sub-chat ID
+</ParamField>
+
+<ParamField body="sdkMessageUuid" type="string" required>
+  SDK message UUID to rollback to
+</ParamField>
+
+**Returns:**
+
+```typescript
+| { success: true; messages: any[] }
+| { success: false; error: string }
+```
+
+---
+
+### updateSubChatSession
+
+Update the session ID for Claude resume.
+
+```typescript
+const subChat = await trpc.chats.updateSubChatSession.mutate({
+  id: 'sub_123',
+  sessionId: 'session_abc'
+});
+```
+
+---
+
+### updateSubChatMode
+
+Switch between plan and agent mode.
+
+```typescript
+const subChat = await trpc.chats.updateSubChatMode.mutate({
+  id: 'sub_123',
+  mode: 'plan'
+});
+```
+
+---
+
+### renameSubChat
+
+Rename a sub-chat.
+
+```typescript
+const subChat = await trpc.chats.renameSubChat.mutate({
+  id: 'sub_123',
+  name: 'New name'
+});
+```
+
+---
+
+### deleteSubChat
+
+Delete a sub-chat.
+
+```typescript
+const deleted = await trpc.chats.deleteSubChat.mutate({ id: 'sub_123' });
+```
+
+## Git Methods
+
+### getDiff
+
+Get the git diff for a chat's worktree.
+
+```typescript
+const result = await trpc.chats.getDiff.query({ chatId: 'chat_123' });
+
+if (result.diff) {
+  console.log('Diff:', result.diff);
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+**Returns:** `{ diff: string | null; error?: string }`
+
+---
+
+### getParsedDiff
+
+Get parsed diff with prefetched file contents.
+
+```typescript
+const result = await trpc.chats.getParsedDiff.query({ chatId: 'chat_123' });
+
+console.log('Files changed:', result.files.length);
+console.log('Lines added:', result.totalAdditions);
+console.log('Lines deleted:', result.totalDeletions);
+
+for (const file of result.files) {
+  console.log(`${file.oldPath} -> ${file.newPath}`);
+  console.log(`  +${file.additions} -${file.deletions}`);
+}
+```
+
+**Returns:**
+
+```typescript
+{
+  files: ParsedFile[];
+  totalAdditions: number;
+  totalDeletions: number;
+  fileContents: Record<string, string>;
+  error?: string;
+}
+```
+
+---
+
+### generateCommitMessage
+
+Generate an AI commit message based on diff.
+
+```typescript
+const result = await trpc.chats.generateCommitMessage.mutate({
+  chatId: 'chat_123',
+  filePaths: ['src/auth.ts', 'src/user.ts'], // optional
+  ollamaModel: 'llama3.2' // optional, for offline mode
+});
+
+console.log('Commit message:', result.message);
+```
+
+<ParamField body="chatId" type="string" required>
+  Chat ID
+</ParamField>
+
+<ParamField body="filePaths" type="string[]">
+  Only generate message for these files
+</ParamField>
+
+<ParamField body="ollamaModel" type="string">
+  Ollama model for offline generation
+</ParamField>
+
+---
+
+### generateSubChatName
+
+Generate an AI name for a sub-chat.
+
+```typescript
+const result = await trpc.chats.generateSubChatName.mutate({
+  userMessage: 'Fix the authentication bug in the login flow',
+  ollamaModel: 'llama3.2' // optional
+});
+
+console.log('Generated name:', result.name);
+```
+
+## PR Methods
+
+### getPrContext
+
+Get PR context for message generation.
+
+```typescript
+const context = await trpc.chats.getPrContext.query({ chatId: 'chat_123' });
+
+if (context) {
+  console.log('Branch:', context.branch);
+  console.log('Base:', context.baseBranch);
+  console.log('Uncommitted:', context.uncommittedCount);
+  console.log('Has upstream:', context.hasUpstream);
+}
+```
+
+---
+
+### updatePrInfo
+
+Update PR info after creating a PR.
+
+```typescript
+const chat = await trpc.chats.updatePrInfo.mutate({
+  chatId: 'chat_123',
+  prUrl: 'https://github.com/owner/repo/pull/42',
+  prNumber: 42
+});
+```
+
+---
+
+### getPrStatus
+
+Get PR status from GitHub.
+
+```typescript
+const status = await trpc.chats.getPrStatus.query({ chatId: 'chat_123' });
+
+if (status?.pr) {
+  console.log('State:', status.pr.state);
+  console.log('Mergeable:', status.pr.mergeable);
+}
+```
+
+---
+
+### mergePr
+
+Merge a PR via gh CLI.
+
+```typescript
+try {
+  await trpc.chats.mergePr.mutate({
+    chatId: 'chat_123',
+    method: 'squash' // 'merge', 'squash', or 'rebase'
+  });
+  console.log('PR merged successfully');
+} catch (error) {
+  if (error.message.includes('MERGE_CONFLICT')) {
+    console.error('PR has conflicts');
+  }
+}
+```
+
+## File Stats
+
+### getFileStats
+
+Get file change statistics for workspaces.
+
+```typescript
+const stats = await trpc.chats.getFileStats.query({
+  openSubChatIds: ['sub_123', 'sub_456']
+});
+
+for (const stat of stats) {
+  console.log(`${stat.chatId}: ${stat.editCount} edits, ${stat.writeCount} writes`);
+}
+```

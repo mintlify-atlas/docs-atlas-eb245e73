@@ -1,0 +1,411 @@
+---
+title: Contributing to 1Code
+description: How to contribute to the open-source project
+---
+
+## Welcome Contributors!
+
+1Code is an open-source project, and we welcome contributions from the community. Whether you're fixing bugs, adding features, improving documentation, or sharing feedback, your help makes 1Code better for everyone.
+
+<Note>
+  By contributing to 1Code, you agree that your contributions will be licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+</Note>
+
+## Ways to Contribute
+
+<CardGroup cols={2}>
+  <Card title="Report Bugs" icon="bug" href="https://github.com/21st-dev/1code/issues">
+    Found an issue? Let us know on GitHub Issues
+  </Card>
+  <Card title="Request Features" icon="lightbulb" href="https://github.com/21st-dev/1code/discussions">
+    Have an idea? Share it in GitHub Discussions
+  </Card>
+  <Card title="Submit Code" icon="code-pull-request" href="https://github.com/21st-dev/1code/pulls">
+    Fix bugs or add features via Pull Requests
+  </Card>
+  <Card title="Improve Docs" icon="book" href="https://github.com/21st-dev/1code-docs">
+    Help make documentation clearer and more complete
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+### Prerequisites
+
+Before you start contributing, make sure you have:
+
+- **Bun** - Package manager and build tool
+- **Python 3.11+** - Required for native module compilation (setuptools needed for 3.12+)
+- **Git** - Version control
+- **Xcode Command Line Tools** (macOS only)
+
+### Development Setup
+
+<Steps>
+  <Step title="Fork and clone the repository">
+    ```bash
+    # Fork the repo on GitHub, then clone your fork
+    git clone https://github.com/YOUR_USERNAME/1code.git
+    cd 1code
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    bun install
+    ```
+
+    This also runs the postinstall script which rebuilds native modules.
+  </Step>
+
+  <Step title="Download agent binaries">
+    <Warning>
+      Don't skip this step! The app won't work without these binaries.
+    </Warning>
+
+    ```bash
+    bun run claude:download
+    bun run codex:download
+    ```
+  </Step>
+
+  <Step title="Start development mode">
+    ```bash
+    bun run dev
+    ```
+
+    The app opens with hot reload enabled. Changes to the renderer process reload automatically; main process changes require restarting the dev server.
+  </Step>
+</Steps>
+
+### Development Commands
+
+```bash
+# Development
+bun run dev              # Start with hot reload
+
+# Build
+bun run build            # Compile TypeScript
+bun run package          # Package for current platform (dir)
+bun run package:mac      # Build macOS (DMG + ZIP)
+bun run package:win      # Build Windows (NSIS + portable)
+bun run package:linux    # Build Linux (AppImage + DEB)
+
+# Database (Drizzle + SQLite)
+bun run db:generate      # Generate migrations from schema
+bun run db:push          # Push schema directly (dev only)
+bun run db:studio        # Open Drizzle Studio
+
+# Type checking
+bun run ts:check         # Check TypeScript without emitting
+```
+
+## Project Structure
+
+Understanding the codebase:
+
+```
+src/
+├── main/                    # Electron main process
+│   ├── index.ts             # App entry, window lifecycle
+│   ├── auth-manager.ts      # OAuth flow, token refresh
+│   ├── auth-store.ts        # Encrypted credential storage
+│   └── lib/
+│       ├── db/              # Drizzle + SQLite
+│       │   ├── schema/      # Database table definitions
+│       │   └── index.ts     # DB init, auto-migrate
+│       └── trpc/routers/    # tRPC API endpoints
+│
+├── preload/                 # IPC bridge (context isolation)
+│   └── index.ts             # Exposes desktopApi + tRPC
+│
+└── renderer/                # React 19 UI
+    ├── App.tsx              # Root with providers
+    ├── features/
+    │   ├── agents/          # Main chat interface
+    │   ├── sidebar/         # Navigation and chat list
+    │   └── layout/          # Resizable panels
+    ├── components/ui/       # Radix UI components
+    └── lib/
+        ├── atoms/           # Jotai global state
+        └── stores/          # Zustand stores
+```
+
+### Key Files
+
+- `src/main/lib/db/schema/index.ts` - Database schema (source of truth)
+- `src/main/lib/trpc/routers/` - Backend API routes
+- `src/renderer/features/agents/main/active-chat.tsx` - Main chat UI
+- `electron.vite.config.ts` - Build configuration
+- `package.json` - Dependencies and scripts
+
+## Making Changes
+
+### Creating a Feature Branch
+
+```bash
+# Create a branch for your work
+git checkout -b feature/your-feature-name
+# or
+git checkout -b fix/bug-description
+```
+
+### Code Style
+
+1Code uses TypeScript with strict mode enabled. Follow these conventions:
+
+**Naming conventions:**
+- Components: `PascalCase` (`ActiveChat.tsx`, `AgentsSidebar.tsx`)
+- Utilities/hooks: `camelCase` (`useFileUpload.ts`, `formatters.ts`)
+- Stores: `kebab-case` (`sub-chat-store.ts`, `agent-chat-store.ts`)
+- Atoms: `camelCase` with `Atom` suffix (`selectedAgentChatIdAtom`)
+
+**General guidelines:**
+- Write TypeScript, not JavaScript
+- Use functional components and hooks (React 19)
+- Prefer Jotai atoms for UI state
+- Prefer Zustand stores for complex state
+- Use tRPC for main ↔ renderer communication
+- Add JSDoc comments for complex functions
+- Keep files focused and single-purpose
+
+### Database Changes
+
+If you modify the database schema:
+
+<Steps>
+  <Step title="Update schema">
+    Edit `src/main/lib/db/schema/index.ts`
+  </Step>
+
+  <Step title="Generate migration">
+    ```bash
+    bun run db:generate
+    ```
+    This creates a SQL migration in `drizzle/`
+  </Step>
+
+  <Step title="Test migration">
+    Test with an existing database to ensure it migrates correctly.
+
+    <Warning>
+      Breaking changes to the schema can cause data loss. Test thoroughly!
+    </Warning>
+  </Step>
+
+  <Step title="Document changes">
+    Add migration notes to your PR description.
+  </Step>
+</Steps>
+
+### Testing Your Changes
+
+Before submitting a PR:
+
+1. **Test in development:**
+   ```bash
+   bun run dev
+   ```
+
+2. **Test a production build:**
+   ```bash
+   bun run build
+   bun run package:mac  # or your platform
+   ```
+
+3. **Test on a clean install:**
+   Simulate a fresh install by clearing app data:
+   ```bash
+   # macOS
+   rm -rf ~/Library/Application\ Support/Agents\ Dev/
+   defaults delete dev.21st.agents.dev
+   
+   # Linux
+   rm -rf ~/.config/1Code-dev/
+   
+   # Windows
+   # Delete %APPDATA%/1Code-dev/
+   ```
+
+4. **Verify git worktrees work:**
+   Test creating, using, and deleting worktrees
+
+5. **Check database migrations:**
+   Test on an existing database with data
+
+## Submitting a Pull Request
+
+<Steps>
+  <Step title="Commit your changes">
+    Write clear, descriptive commit messages:
+    ```bash
+    git add .
+    git commit -m "feat: add voice input to chat interface"
+    ```
+
+    **Commit message format:**
+    - `feat:` - New feature
+    - `fix:` - Bug fix
+    - `docs:` - Documentation changes
+    - `refactor:` - Code refactoring
+    - `test:` - Adding tests
+    - `chore:` - Build process, dependencies
+  </Step>
+
+  <Step title="Push to your fork">
+    ```bash
+    git push origin feature/your-feature-name
+    ```
+  </Step>
+
+  <Step title="Create a Pull Request">
+    1. Go to the [1Code repository](https://github.com/21st-dev/1code)
+    2. Click **Pull Requests** → **New Pull Request**
+    3. Select your fork and branch
+    4. Fill out the PR template:
+       - Clear title describing the change
+       - Detailed description of what and why
+       - Screenshots/videos for UI changes
+       - Testing steps
+       - Related issues (if any)
+  </Step>
+
+  <Step title="Respond to feedback">
+    The maintainers will review your PR and may request changes. Be patient and responsive to feedback.
+  </Step>
+</Steps>
+
+### PR Guidelines
+
+**Good PRs:**
+- Focus on a single feature or fix
+- Include tests if applicable
+- Update documentation if needed
+- Have descriptive titles and descriptions
+- Include screenshots for UI changes
+- Pass all CI checks
+
+**What to avoid:**
+- Mixing multiple unrelated changes
+- Breaking changes without discussion
+- Reformatting large amounts of existing code
+- Adding dependencies without justification
+- Changing build configuration unnecessarily
+
+## Open Source vs Hosted Version
+
+1Code has both an open-source version and a hosted version at [1code.dev](https://1code.dev). Understand the differences:
+
+| Feature | Open Source | Hosted (1code.dev) |
+|---------|-------------|-------------------|
+| Local AI chat | ✅ Yes | ✅ Yes |
+| Claude Code integration | ✅ Yes | ✅ Yes |
+| Git worktrees | ✅ Yes | ✅ Yes |
+| Terminal | ✅ Yes | ✅ Yes |
+| Sign in / Sync | ❌ No | ✅ Yes |
+| Background agents | ❌ No | ✅ Yes |
+| Auto-updates | ❌ No | ✅ Yes |
+| Private Discord & support | ❌ No | ✅ Yes |
+| Early access to features | ❌ No | ✅ Yes |
+
+**Contributing guidelines:**
+- Core features should work in open source
+- Backend-dependent features (sync, background agents) are closed source
+- Document when a feature requires 1code.dev subscription
+- Don't add telemetry or tracking that's enabled by default
+
+## Analytics & Telemetry
+
+Analytics (PostHog) and error tracking (Sentry) are **disabled by default** in open source builds.
+
+They only activate if environment variables are set in `.env.local`:
+
+```bash
+POSTHOG_API_KEY=your_key
+SENTRY_DSN=your_dsn
+```
+
+**When adding telemetry:**
+- Always make it opt-in for open source
+- Document what data is collected
+- Respect user privacy
+- Never collect code, credentials, or personal data
+
+## Community Guidelines
+
+### Communication
+
+- **Be respectful** - Treat everyone with kindness and respect
+- **Be patient** - Maintainers are volunteers with limited time
+- **Be constructive** - Focus on solutions, not problems
+- **Be clear** - Provide context, steps to reproduce, and examples
+
+### Where to Discuss
+
+<CardGroup cols={2}>
+  <Card title="Discord" icon="discord" href="https://discord.gg/8ektTZGnj4">
+    Real-time chat with the community
+  </Card>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/21st-dev/1code/issues">
+    Bug reports and feature requests
+  </Card>
+  <Card title="GitHub Discussions" icon="comments" href="https://github.com/21st-dev/1code/discussions">
+    Questions, ideas, and general discussion
+  </Card>
+  <Card title="Twitter/X" icon="x-twitter" href="https://twitter.com/21st_dev">
+    Updates and announcements
+  </Card>
+</CardGroup>
+
+### Getting Help
+
+If you're stuck:
+
+1. Check the [documentation](/introduction)
+2. Search [existing issues](https://github.com/21st-dev/1code/issues)
+3. Ask in [Discord](https://discord.gg/8ektTZGnj4)
+4. Create a [GitHub Discussion](https://github.com/21st-dev/1code/discussions)
+
+For bugs, always [create an issue](https://github.com/21st-dev/1code/issues/new) with:
+- Clear description
+- Steps to reproduce
+- Expected vs actual behavior
+- Environment (OS, version, build type)
+- Logs or screenshots
+
+## License
+
+1Code is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+
+**This means you can:**
+- Use the code commercially
+- Modify the code
+- Distribute the code
+- Use it privately
+- Grant patent rights
+
+**You must:**
+- Include the license and copyright notice
+- State changes you make
+- Include the NOTICE file if one exists
+
+**You cannot:**
+- Hold the authors liable
+- Use trademarks without permission
+
+## Recognition
+
+Contributors are recognized in:
+- GitHub contributors page
+- Release notes (for significant contributions)
+- The project README
+
+## Questions?
+
+Not sure about something? Ask!
+
+- **Discord:** [discord.gg/8ektTZGnj4](https://discord.gg/8ektTZGnj4)
+- **GitHub Discussions:** [github.com/21st-dev/1code/discussions](https://github.com/21st-dev/1code/discussions)
+- **Email:** support@21st.dev
+
+Thank you for contributing to 1Code! 🎉

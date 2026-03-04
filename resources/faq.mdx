@@ -1,0 +1,410 @@
+---
+title: Frequently Asked Questions
+description: Common questions about 1Code
+---
+
+## General Questions
+
+<AccordionGroup>
+  <Accordion title="What is 1Code?" icon="circle-question">
+    1Code is an open-source desktop application that provides a unified interface for AI coding agents like Claude Code and Codex. It offers features like git worktree isolation, visual diff previews, background agents, and MCP server integration.
+
+    The app is built on Electron and runs locally on your machine, with optional cloud features available through a subscription.
+  </Accordion>
+
+  <Accordion title="Is 1Code free to use?" icon="dollar-sign">
+    Yes! The open-source version is completely free. You can:
+    - Build from source
+    - Use local AI chat
+    - Work with git worktrees
+    - Use the integrated terminal
+    - Access Claude Code and Codex integration
+
+    **Subscription features** (1code.dev):
+    - Sign in / Sync across devices
+    - Background agents that run in the cloud
+    - Auto-updates
+    - Private Discord support
+    - Early access to new features
+    - Automations (Pro/Max plans)
+
+    See [CONTRIBUTING.md](https://github.com/21st-dev/1code/blob/main/CONTRIBUTING.md) for the full feature comparison.
+  </Accordion>
+
+  <Accordion title="What's the difference between 1Code and Cursor/Windsurf?" icon="code">
+    1Code focuses on orchestrating multiple agents with git worktree isolation:
+
+    **1Code advantages:**
+    - Multi-agent support (Claude Code, Codex, custom models)
+    - Git worktree isolation per chat (never touch main)
+    - Background agents that run in cloud sandboxes
+    - MCP server management UI
+    - Plan mode with structured thinking
+    - Open source with self-hosting option
+
+    **Cursor/Windsurf advantages:**
+    - More polished IDE experience
+    - Better inline editing
+    - Larger community and ecosystem
+  </Accordion>
+
+  <Accordion title="What are git worktrees and why should I use them?" icon="git-alt">
+    Git worktrees let you have multiple working directories from the same repository. 1Code creates a separate worktree for each chat session, so:
+
+    - Your main branch stays clean and untouched
+    - You can review changes before merging
+    - Multiple agents can work in parallel without conflicts
+    - Failed experiments don't pollute your main codebase
+
+    Learn more in the [Working with Worktrees](/guides/working-with-worktrees) guide.
+  </Accordion>
+
+  <Accordion title="Does 1Code work offline?" icon="wifi">
+    Partially. The app runs locally, but:
+
+    **Works offline:**
+    - All UI and local features
+    - Terminal and file operations
+    - Git operations
+
+    **Requires internet:**
+    - Claude Code API calls (requires Anthropic API key)
+    - Codex API calls (requires OpenRouter or other provider)
+    - Background agents (cloud sandboxes)
+    - MCP server installations from marketplace
+    - Auto-updates (if using 1code.dev subscription)
+  </Accordion>
+</AccordionGroup>
+
+## Installation & Setup
+
+<AccordionGroup>
+  <Accordion title="What are the system requirements?" icon="computer">
+    **Minimum requirements:**
+    - macOS 10.15+, Windows 10+, or Linux
+    - 4GB RAM (8GB recommended)
+    - 500MB disk space
+    - Node.js 19+ (for development only)
+    - Bun (for development only)
+
+    **For building from source:**
+    - Bun package manager
+    - Python 3.11 (3.12+ requires setuptools)
+    - Xcode Command Line Tools (macOS only)
+    - Git
+  </Accordion>
+
+  <Accordion title="How do I install 1Code?" icon="download">
+    **Option 1: Download pre-built app (recommended)**
+    Subscribe at [1code.dev](https://1code.dev) to get pre-built releases with auto-updates.
+
+    **Option 2: Build from source (free)**
+    ```bash
+    git clone https://github.com/21st-dev/1code
+    cd 1code
+    bun install
+    bun run claude:download
+    bun run codex:download
+    bun run build
+    bun run package:mac  # or package:win, package:linux
+    ```
+
+    <Warning>
+      Don't skip the `claude:download` and `codex:download` steps! The app won't work properly without these binaries.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Do I need my own API keys?" icon="key">
+    Yes. 1Code supports "Bring Your Own Key" (BYOK):
+
+    **Required API keys:**
+    - Anthropic API key (for Claude Code)
+    - OpenRouter, OpenAI, or other provider (for Codex and custom models)
+
+    Configure API keys in **Settings** → **Models & Providers**.
+
+    <Tip>
+      Background agents (cloud sandboxes) are only available with a 1code.dev subscription and don't require your own keys.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Can I use 1Code with my company's LLM?" icon="building">
+    Yes! 1Code supports custom models and providers:
+
+    1. Go to **Settings** → **Models & Providers**
+    2. Add a custom provider with your API endpoint
+    3. Configure authentication (API key, headers, etc.)
+    4. Select your custom model in the model picker
+
+    See [Custom Models](/advanced/custom-models) for detailed setup instructions.
+  </Accordion>
+</AccordionGroup>
+
+## Features & Usage
+
+<AccordionGroup>
+  <Accordion title="What's the difference between Plan mode and Agent mode?" icon="list-check">
+    **Plan mode:**
+    - Agent asks clarifying questions first
+    - Creates a structured plan before execution
+    - You review and approve the plan
+    - Good for complex or ambiguous tasks
+
+    **Agent mode:**
+    - Agent executes immediately
+    - Faster for straightforward tasks
+    - Full tool permissions (bash, file edits, etc.)
+
+    Switch between modes using `/plan` and `/agent` commands.
+  </Accordion>
+
+  <Accordion title="How do background agents work?" icon="cloud">
+    Background agents run in isolated cloud sandboxes that continue working even when your laptop is closed.
+
+    **Key features:**
+    - Clone your repo to a cloud VM
+    - Run agents with full tool access
+    - Live browser previews of dev branches
+    - Notification when tasks complete
+    - Works on mobile via PWA
+
+    **Requirements:**
+    - Pro or Max subscription at [1code.dev](https://1code.dev)
+
+    Learn more: [Using Background Agents](/guides/using-background-agents)
+  </Accordion>
+
+  <Accordion title="What are MCP servers?" icon="plug">
+    MCP (Model Context Protocol) servers extend agent capabilities by connecting to external tools and services.
+
+    **Examples:**
+    - Database access (PostgreSQL, MySQL)
+    - Cloud providers (AWS, GCP, Azure)
+    - Project management (Linear, Jira)
+    - Communication (Slack, Discord)
+    - File systems and APIs
+
+    1Code includes:
+    - Built-in MCP server management UI
+    - Plugin marketplace for one-click installs
+    - Rich tool call display with formatted I/O
+
+    See [Setting Up MCP Servers](/guides/setting-up-mcp-servers) for details.
+  </Accordion>
+
+  <Accordion title="Can I fork a chat to try different approaches?" icon="code-branch">
+    Yes! Click any assistant message and select **Fork Chat** to create a new branch of the conversation.
+
+    This lets you:
+    - Try different approaches without losing the original
+    - Compare results side-by-side
+    - Experiment with different prompts
+
+    Each fork runs in its own git worktree.
+  </Accordion>
+
+  <Accordion title="How do I queue multiple prompts?" icon="layer-group">
+    Use the message queue to send prompts while an agent is working:
+
+    1. Type your message in the input box
+    2. The "Send" button changes to "Queue"
+    3. Click **Queue** to add to the queue
+    4. The agent processes queued messages in order
+
+    This is useful for:
+    - Adding follow-up instructions
+    - Correcting the agent mid-task
+    - Chaining multiple tasks
+  </Accordion>
+
+  <Accordion title="Can I use voice input?" icon="microphone">
+    Yes! 1Code includes hold-to-talk dictation:
+
+    1. Hold the **Space** key (or click the mic icon)
+    2. Speak your message
+    3. Release to stop recording
+    4. The transcribed text appears in the input box
+
+    <Note>
+      Requires microphone permission. macOS will prompt on first use.
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+## Automations & API
+
+<AccordionGroup>
+  <Accordion title="What are automations?" icon="robot">
+    Automations trigger agents automatically based on events:
+
+    **Triggers:**
+    - GitHub PR comments (@1code)
+    - Linear task mentions (@1code)
+    - Slack messages (@1code)
+    - Git events (push, PR, CI failures)
+    - Manual triggers
+
+    **Example use cases:**
+    - Auto-review PRs
+    - Fix failing CI tests
+    - Generate documentation on PR
+    - Sync Linear tasks with code changes
+
+    **Requirements:**
+    - Pro or Max subscription
+
+    Learn more: [Automations Guide](/guides/automations)
+  </Accordion>
+
+  <Accordion title="Can I use 1Code programmatically?" icon="code">
+    Yes! The 1Code API lets you run agents programmatically:
+
+    ```bash
+    curl -X POST https://1code.dev/api/v1/tasks \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -d '{
+        "repository": "https://github.com/your-org/your-repo",
+        "prompt": "Fix the failing CI tests"
+      }'
+    ```
+
+    **Features:**
+    - Remote sandboxes with repo cloned
+    - Automatic PR creation
+    - Async execution with status polling
+    - Follow-up messages to running tasks
+
+    **Requirements:**
+    - API access (Max plan)
+
+    Learn more: [API Documentation](/api/overview)
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="The app builds but agents don't work" icon="triangle-exclamation">
+    You likely forgot to download the agent binaries:
+
+    ```bash
+    bun run claude:download
+    bun run codex:download
+    bun run build
+    ```
+
+    These binaries are required for Claude Code and Codex functionality.
+  </Accordion>
+
+  <Accordion title="I'm getting Python/setuptools errors" icon="python">
+    Python 3.12+ doesn't include setuptools by default:
+
+    ```bash
+    pip install setuptools
+    bun install
+    ```
+
+    Or use Python 3.11 which includes setuptools.
+  </Accordion>
+
+  <Accordion title="Git worktree operations are failing" icon="git-alt">
+    Common causes:
+    - Uncommitted changes in main branch
+    - Existing worktree with the same name
+    - Corrupted git repository
+
+    **Solution:**
+    ```bash
+    git worktree list
+    git worktree prune
+    git status
+    ```
+
+    See [Troubleshooting](/resources/troubleshooting) for more solutions.
+  </Accordion>
+
+  <Accordion title="Where can I get help?" icon="life-ring">
+    <CardGroup cols={2}>
+      <Card title="Discord" icon="discord" href="https://discord.gg/8ektTZGnj4">
+        Real-time community support
+      </Card>
+      <Card title="GitHub" icon="github" href="https://github.com/21st-dev/1code/issues">
+        Bug reports and feature requests
+      </Card>
+    </CardGroup>
+
+    See [Support](/resources/support) for all support options.
+  </Accordion>
+</AccordionGroup>
+
+## Privacy & Analytics
+
+<AccordionGroup>
+  <Accordion title="Does 1Code collect telemetry?" icon="chart-line">
+    **Open source builds:**
+    Analytics (PostHog) and error tracking (Sentry) are **disabled by default**. They only activate if you set environment variables in `.env.local`.
+
+    **1code.dev builds:**
+    Basic usage analytics are enabled to help improve the product. We collect:
+    - Feature usage (anonymized)
+    - Error reports (via Sentry)
+    - Performance metrics
+
+    We **never** collect:
+    - Your code or file contents
+    - API keys or credentials
+    - Personal conversations with agents
+    - Repository contents
+  </Accordion>
+
+  <Accordion title="Where is my data stored?" icon="database">
+    **Local data:**
+    - Database: `~/Library/Application Support/1Code/data/agents.db` (macOS)
+    - Projects: In your specified local folders
+    - Worktrees: In `.git/worktrees/` of your repo
+
+    **Cloud data (1code.dev subscription only):**
+    - Account info and settings
+    - Background agent session metadata
+    - Automation configurations
+
+    Your code never leaves your machine unless you use background agents or the API.
+  </Accordion>
+
+  <Accordion title="Can I self-host 1Code?" icon="server">
+    Yes! The entire app is open source. Build and run it locally:
+
+    ```bash
+    git clone https://github.com/21st-dev/1code
+    cd 1code
+    bun install
+    bun run claude:download
+    bun run codex:download
+    bun run dev
+    ```
+
+    **Limitations:**
+    - No cloud features (background agents, sync, automations)
+    - No auto-updates
+    - You need to manage your own API keys
+
+    For cloud features, you need a [1code.dev](https://1code.dev) subscription.
+  </Accordion>
+</AccordionGroup>
+
+## Still have questions?
+
+<CardGroup cols={2}>
+  <Card title="Join Discord" icon="discord" href="https://discord.gg/8ektTZGnj4">
+    Chat with the community and team
+  </Card>
+  <Card title="GitHub Discussions" icon="comments" href="https://github.com/21st-dev/1code/discussions">
+    Ask questions and share ideas
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/resources/troubleshooting">
+    Common issues and solutions
+  </Card>
+  <Card title="Support" icon="life-ring" href="/resources/support">
+    All support options
+  </Card>
+</CardGroup>

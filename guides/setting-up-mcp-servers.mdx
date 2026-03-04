@@ -1,0 +1,542 @@
+---
+title: "Setting Up MCP Servers"
+description: "Configuring Model Context Protocol servers and plugins to extend agent capabilities"
+---
+
+## What is MCP?
+
+The Model Context Protocol (MCP) lets you connect external tools and services to your AI agents. Think of it as a plugin system that gives agents superpowers:
+
+- Query databases
+- Search documentation
+- Access APIs
+- Read cloud resources
+- Execute custom tools
+
+1Code includes full MCP server lifecycle management with no config files required.
+
+## MCP Architecture
+
+```mermaid
+graph LR
+    A[Agent] --> B[1Code]
+    B --> C[MCP Server 1]
+    B --> D[MCP Server 2]
+    B --> E[MCP Server 3]
+    C --> F[Database]
+    D --> G[API]
+    E --> H[Filesystem]
+```
+
+**How it works:**
+1. You configure MCP servers in 1Code settings
+2. Servers expose "tools" the agent can call
+3. Agent decides when to use which tools
+4. Tools execute and return results
+5. Agent uses results to accomplish tasks
+
+## Finding MCP Servers
+
+### Built-in Plugin Marketplace
+
+1Code includes a curated marketplace of popular MCP servers:
+
+<Steps>
+  <Step title="Open MCP settings">
+    Go to **Settings** > **MCP Servers** tab
+  </Step>
+
+  <Step title="Browse plugins">
+    Click **Add Server** > **Browse Marketplace**
+    
+    Popular plugins:
+    - **GitHub**: Query issues, PRs, code search
+    - **PostgreSQL**: Execute SQL queries
+    - **Filesystem**: Read/write files with permission controls
+    - **Brave Search**: Web search for documentation
+    - **Puppeteer**: Browser automation
+  </Step>
+
+  <Step title="One-click install">
+    Click **Install** on any plugin:
+    - Configuration form appears
+    - Enter required settings (API keys, URLs)
+    - Server is added automatically
+    - Agent can use it immediately
+  </Step>
+</Steps>
+
+### Community Servers
+
+Explore community-created servers:
+
+- [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers)
+- [MCP Server Registry](https://mcp.so)
+- NPM packages tagged `mcp-server`
+- GitHub repos with `mcp-server` topic
+
+## Adding MCP Servers
+
+### Stdio Servers (Local Processes)
+
+Most MCP servers run as local processes communicating via stdio:
+
+<Steps>
+  <Step title="Open settings">
+    **Settings** > **MCP Servers** > **Add Server**
+  </Step>
+
+  <Step title="Choose agent">
+    Select which agent can use this server:
+    - **Claude Code**: For Claude-specific tools
+    - **Codex**: For Codex-specific tools
+    - **Both**: Available to all agents
+  </Step>
+
+  <Step title="Configure connection">
+    Enter the command to start the server:
+    
+    **Example: NPM package**
+    ```json
+    {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_URL": "postgresql://user:pass@localhost/db"
+      }
+    }
+    ```
+    
+    **Example: Python script**
+    ```json
+    {
+      "command": "python",
+      "args": ["/path/to/server.py"],
+      "env": {
+        "API_KEY": "your-api-key"
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Set scope">
+    Choose when the server is available:
+    - **Global**: Always available
+    - **Project-specific**: Only for specific repositories
+  </Step>
+
+  <Step title="Test connection">
+    Click **Test** to verify:
+    - Server starts successfully
+    - Tools are discovered
+    - No authentication errors
+  </Step>
+</Steps>
+
+### HTTP/SSE Servers (Remote)
+
+Some servers run as HTTP services:
+
+<Steps>
+  <Step title="Add remote server">
+    **Settings** > **MCP Servers** > **Add Server** > **HTTP/SSE**
+  </Step>
+
+  <Step title="Enter URL">
+    ```json
+    {
+      "url": "https://your-mcp-server.example.com/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Configure authentication">
+    Add required headers, API keys, or OAuth tokens.
+  </Step>
+
+  <Step title="Test connection">
+    Verify the server is reachable and tools are listed.
+  </Step>
+</Steps>
+
+## Configuring Common Servers
+
+### GitHub MCP Server
+
+Query repositories, issues, and pull requests:
+
+```json
+{
+  "name": "github",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-github"],
+  "env": {
+    "GITHUB_TOKEN": "ghp_your_token_here"
+  }
+}
+```
+
+**Get a token:**
+1. Go to GitHub Settings > Developer settings > Personal access tokens
+2. Generate new token (classic)
+3. Grant scopes: `repo`, `read:org`, `read:user`
+4. Copy token to 1Code settings
+
+**Available tools:**
+- `search_repositories`
+- `search_code`
+- `search_issues`
+- `get_file_contents`
+- `create_issue`
+- `create_pull_request`
+
+### PostgreSQL MCP Server
+
+Execute SQL queries from chat:
+
+```json
+{
+  "name": "postgres",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-postgres"],
+  "env": {
+    "POSTGRES_URL": "postgresql://username:password@localhost:5432/database"
+  }
+}
+```
+
+**Available tools:**
+- `query`: Execute SELECT queries
+- `execute`: Run INSERT/UPDATE/DELETE
+- `describe_table`: Get table schema
+- `list_tables`: List all tables
+
+### Filesystem MCP Server
+
+Safe file system access with permissions:
+
+```json
+{
+  "name": "filesystem",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"],
+  "env": {}
+}
+```
+
+**Available tools:**
+- `read_file`: Read file contents
+- `write_file`: Write to files
+- `list_directory`: List directory contents
+- `search_files`: Find files by pattern
+
+<Warning>
+Filesystem server is restricted to the paths you specify. Only grant access to safe directories.
+</Warning>
+
+### Brave Search MCP Server
+
+Web search for finding documentation:
+
+```json
+{
+  "name": "brave-search",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+  "env": {
+    "BRAVE_API_KEY": "your-brave-api-key"
+  }
+}
+```
+
+**Get API key:**
+1. Visit [brave.com/search/api](https://brave.com/search/api)
+2. Sign up for free tier (2000 queries/month)
+3. Copy API key to 1Code
+
+**Available tools:**
+- `brave_web_search`: General web search
+- `brave_local_search`: Location-based search
+
+## Managing MCP Servers
+
+### Viewing Connected Servers
+
+The MCP settings panel shows all configured servers:
+
+- **Status indicator**: Green (connected), Red (failed), Yellow (needs auth)
+- **Tool count**: How many tools the server exposes
+- **Last used**: When the agent last called this server
+- **Scope**: Global or project-specific
+
+### Enabling/Disabling Servers
+
+Toggle servers on/off without deleting:
+
+1. Find the server in settings
+2. Click the toggle switch
+3. Server starts/stops immediately
+4. Disabled servers don't appear to agents
+
+**Use cases:**
+- Temporarily disable expensive API servers
+- Turn off servers for specific projects
+- Debug issues by eliminating servers
+
+### Editing Server Configuration
+
+1. Click the server name in settings
+2. Modify connection details, env vars, or scope
+3. Click **Save**
+4. Server reconnects with new configuration
+
+### Deleting Servers
+
+1. Click the three-dot menu on the server card
+2. Select **Delete**
+3. Confirm deletion
+4. Server is removed immediately
+
+## Using MCP Servers in Chat
+
+### Automatic Tool Usage
+
+Agents automatically use MCP tools when relevant:
+
+**Example:**
+```
+You: "Search our GitHub issues for bugs related to authentication"
+
+Agent: I'll search for authentication bugs...
+[Calls github.search_issues tool]
+Found 12 issues. Here are the most relevant:
+1. Issue #234: Login fails with OAuth
+2. Issue #189: JWT token expiration...
+```
+
+No special syntax needed - the agent decides when tools are helpful.
+
+### Explicit Tool Mentions
+
+Mention MCP servers explicitly with `@`:
+
+```
+You: @postgres show me all users created in the last 7 days
+
+Agent: I'll query the database...
+[Calls postgres.query tool]
+Here are the 45 users created recently:
+...
+```
+
+### Tool Call Display
+
+MCP tool calls appear as expandable cards:
+
+- **Tool name**: Which tool was called
+- **Input**: Arguments passed to the tool
+- **Output**: Formatted results
+- **Timing**: How long the call took
+
+**Example display:**
+```
+┌─ github.search_code
+│ Input: { query: "authentication bug", repo: "org/repo" }
+│ Output: Found 23 results
+│ Duration: 1.2s
+└─
+```
+
+## MCP Server Development
+
+Create your own MCP servers to expose custom tools:
+
+### Quick Start
+
+```typescript server.ts
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
+const server = new Server(
+  {
+    name: "my-custom-server",
+    version: "1.0.0",
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
+
+// Define a tool
+server.setRequestHandler("tools/list", async () => ({
+  tools: [
+    {
+      name: "greet",
+      description: "Greet a user by name",
+      inputSchema: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+        },
+        required: ["name"],
+      },
+    },
+  ],
+}));
+
+// Handle tool calls
+server.setRequestHandler("tools/call", async (request) => {
+  if (request.params.name === "greet") {
+    const name = request.params.arguments?.name;
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Hello, ${name}! Welcome to MCP.`,
+        },
+      ],
+    };
+  }
+  throw new Error(`Unknown tool: ${request.params.name}`);
+});
+
+// Start server
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+
+### Adding to 1Code
+
+Once your server is ready:
+
+1. Package as NPM module or standalone script
+2. Add to 1Code via **Settings** > **MCP Servers**
+3. Test with your agent
+4. Share with the community!
+
+**Resources:**
+- [MCP SDK Documentation](https://modelcontextprotocol.io)
+- [Server Examples](https://github.com/modelcontextprotocol/servers)
+- [TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
+
+## Security and Permissions
+
+### Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Least Privilege" icon="shield-halved">
+    Grant MCP servers only the permissions they need. Use read-only tokens when possible.
+  </Card>
+  
+  <Card title="Scope Appropriately" icon="crosshairs">
+    Use project-specific scoping to limit server access to relevant repositories.
+  </Card>
+  
+  <Card title="Audit Tools" icon="magnifying-glass">
+    Review what tools a server exposes before enabling it for agents.
+  </Card>
+  
+  <Card title="Rotate Credentials" icon="key">
+    Regularly rotate API keys and tokens used by MCP servers.
+  </Card>
+</CardGroup>
+
+### Authentication Flows
+
+Some MCP servers need OAuth authentication:
+
+1. Add server with OAuth config
+2. Click **Authenticate** in settings
+3. Browser opens to provider's auth page
+4. Grant required permissions
+5. Redirected back to 1Code
+6. Server connects automatically
+
+**Supported OAuth providers:**
+- GitHub
+- Google
+- Microsoft
+- Slack
+- Linear
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Server shows 'failed' status">
+    **Check:**
+    1. Command is correct and executable is in PATH
+    2. Environment variables are set properly
+    3. Required API keys are valid
+    4. Network access for HTTP servers
+    
+    **Debug:**
+    - Click server > **View Logs** to see error messages
+    - Test command manually in terminal
+    - Verify dependencies are installed (`npx` for NPM servers)
+  </Accordion>
+  
+  <Accordion title="Tools not appearing in agent">
+    **Cause**: Server might be disabled or scoped incorrectly.
+    
+    **Solution**:
+    1. Verify server is enabled (toggle is on)
+    2. Check scope matches your current project
+    3. Restart the chat to refresh tool list
+    4. Try mentioning the server explicitly with `@servername`
+  </Accordion>
+  
+  <Accordion title="Authentication errors">
+    **Cause**: Expired tokens or incorrect credentials.
+    
+    **Solution**:
+    1. Click **Logout** then **Authenticate** again
+    2. Regenerate API keys in the service's settings
+    3. Update environment variables in server config
+    4. Check token has required scopes/permissions
+  </Accordion>
+  
+  <Accordion title="Tool calls timing out">
+    **Cause**: Server is slow or external API is down.
+    
+    **Solution**:
+    - Check server logs for performance issues
+    - Verify external APIs are reachable
+    - Increase timeout in server config if needed
+    - Consider caching for frequently called tools
+  </Accordion>
+  
+  <Accordion title="Server won't start (Windows)">
+    **Cause**: Windows path or shell issues.
+    
+    **Solution**:
+    - Use full paths: `C:\\Program Files\\nodejs\\npx.cmd`
+    - Set shell explicitly in config: `"shell": "cmd.exe"`
+    - Check Windows Defender isn't blocking execution
+    - Run 1Code as administrator if needed
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Models" icon="brain" href="/advanced/custom-models">
+    Configure custom AI models that work with your MCP servers.
+  </Card>
+  
+  <Card title="Automations" icon="bolt" href="/guides/automations">
+    Trigger agents with MCP tools automatically from external events.
+  </Card>
+  
+  <Card title="Skills" icon="wand-magic-sparkles" href="/advanced/skills-and-commands">
+    Create custom skills that bundle MCP servers with prompts.
+  </Card>
+  
+  <Card title="MCP Docs" icon="book" href="https://modelcontextprotocol.io">
+    Learn more about MCP protocol and server development.
+  </Card>
+</CardGroup>

@@ -1,0 +1,362 @@
+---
+title: Projects Router
+description: Manage project folders and git repositories in 1Code Desktop
+---
+
+## Overview
+
+The Projects router manages project folders, git repository information, and project metadata. Each project represents a local directory that can contain git repositories.
+
+## Methods
+
+### list
+
+List all projects ordered by most recently updated.
+
+```typescript
+const projects = await trpc.projects.list.query();
+```
+
+**Returns:** `Project[]`
+
+<ResponseField name="id" type="string">
+  Unique project identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Project name (folder name by default)
+</ResponseField>
+
+<ResponseField name="path" type="string">
+  Absolute path to project directory
+</ResponseField>
+
+<ResponseField name="gitRemoteUrl" type="string | null">
+  Git remote URL (if repository)
+</ResponseField>
+
+<ResponseField name="gitProvider" type="string | null">
+  Git provider: `github`, `gitlab`, `bitbucket`
+</ResponseField>
+
+<ResponseField name="gitOwner" type="string | null">
+  Repository owner (GitHub username or org)
+</ResponseField>
+
+<ResponseField name="gitRepo" type="string | null">
+  Repository name
+</ResponseField>
+
+<ResponseField name="iconPath" type="string | null">
+  Path to custom project icon
+</ResponseField>
+
+<ResponseField name="createdAt" type="Date">
+  Project creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="Date">
+  Last updated timestamp
+</ResponseField>
+
+---
+
+### get
+
+Get a single project by ID.
+
+```typescript
+const project = await trpc.projects.get.query({ id: 'proj_123' });
+```
+
+<ParamField query="id" type="string" required>
+  Project ID
+</ParamField>
+
+**Returns:** `Project | null`
+
+---
+
+### create
+
+Create a project from a known path.
+
+```typescript
+const project = await trpc.projects.create.mutate({
+  path: '/Users/username/projects/my-app',
+  name: 'My App' // optional
+});
+```
+
+<ParamField body="path" type="string" required>
+  Absolute path to project directory
+</ParamField>
+
+<ParamField body="name" type="string">
+  Custom project name (defaults to folder name)
+</ParamField>
+
+**Returns:** `Project`
+
+<Note>
+  If a project with the same path already exists, the existing project is returned.
+</Note>
+
+---
+
+### openFolder
+
+Open a native folder picker dialog and create a project from the selected folder.
+
+```typescript
+const project = await trpc.projects.openFolder.mutate();
+```
+
+**Returns:** `Project | null` (null if user cancels)
+
+---
+
+### rename
+
+Rename a project.
+
+```typescript
+const project = await trpc.projects.rename.mutate({
+  id: 'proj_123',
+  name: 'New Name'
+});
+```
+
+<ParamField body="id" type="string" required>
+  Project ID
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  New project name (min 1 character)
+</ParamField>
+
+**Returns:** `Project`
+
+---
+
+### delete
+
+Delete a project and all its chats.
+
+```typescript
+const deleted = await trpc.projects.delete.mutate({
+  id: 'proj_123'
+});
+```
+
+<ParamField body="id" type="string" required>
+  Project ID
+</ParamField>
+
+**Returns:** `Project` (deleted project)
+
+<Warning>
+  This only deletes the project record and associated chats from the database. The actual project folder is not deleted from disk.
+</Warning>
+
+---
+
+### refreshGitInfo
+
+Refresh git remote information for a project.
+
+```typescript
+const project = await trpc.projects.refreshGitInfo.mutate({
+  id: 'proj_123'
+});
+```
+
+<ParamField body="id" type="string" required>
+  Project ID
+</ParamField>
+
+**Returns:** `Project | null`
+
+---
+
+### cloneFromGitHub
+
+Clone a GitHub repository and create a project.
+
+```typescript
+const project = await trpc.projects.cloneFromGitHub.mutate({
+  repoUrl: 'https://github.com/owner/repo'
+});
+```
+
+<ParamField body="repoUrl" type="string" required>
+  GitHub repository URL (HTTPS, SSH, or short format `owner/repo`)
+</ParamField>
+
+**Returns:** `Project`
+
+Repositories are cloned to `~/.21st/repos/{owner}/{repo}`.
+
+---
+
+### locateAndAddProject
+
+Open a folder picker to locate an existing clone of a specific repository.
+
+```typescript
+const result = await trpc.projects.locateAndAddProject.mutate({
+  expectedOwner: 'facebook',
+  expectedRepo: 'react'
+});
+
+if (result.success) {
+  console.log('Project added:', result.project);
+} else {
+  console.log('Failed:', result.reason);
+}
+```
+
+<ParamField body="expectedOwner" type="string" required>
+  Expected repository owner
+</ParamField>
+
+<ParamField body="expectedRepo" type="string" required>
+  Expected repository name
+</ParamField>
+
+**Returns:**
+
+```typescript
+| { success: true; project: Project }
+| { success: false; reason: 'no-window' | 'canceled' | 'wrong-repo'; found?: string }
+```
+
+---
+
+### pickCloneDestination
+
+Open a folder picker to choose where to clone a repository.
+
+```typescript
+const result = await trpc.projects.pickCloneDestination.mutate({
+  suggestedName: 'react'
+});
+
+if (result.success) {
+  console.log('Clone to:', result.targetPath);
+}
+```
+
+<ParamField body="suggestedName" type="string" required>
+  Suggested folder name for the clone
+</ParamField>
+
+**Returns:**
+
+```typescript
+| { success: true; targetPath: string }
+| { success: false; reason: 'no-window' | 'canceled' }
+```
+
+---
+
+### uploadIcon
+
+Upload a custom icon for a project.
+
+```typescript
+const project = await trpc.projects.uploadIcon.mutate({
+  id: 'proj_123'
+});
+```
+
+<ParamField body="id" type="string" required>
+  Project ID
+</ParamField>
+
+Opens a native file picker for image selection. Supported formats: PNG, JPG, JPEG, SVG, WebP, ICO.
+
+**Returns:** `Project | null`
+
+---
+
+### removeIcon
+
+Remove the custom icon for a project.
+
+```typescript
+const project = await trpc.projects.removeIcon.mutate({
+  id: 'proj_123'
+});
+```
+
+<ParamField body="id" type="string" required>
+  Project ID
+</ParamField>
+
+**Returns:** `Project`
+
+---
+
+### getLaunchDirectory
+
+Get the directory passed via CLI when launching the app (consumed once).
+
+```typescript
+const path = await trpc.projects.getLaunchDirectory.query();
+if (path) {
+  console.log('Launched with:', path);
+}
+```
+
+**Returns:** `string | null`
+
+<Note>
+  Based on [PR #16](https://github.com/21st-dev/1code/pull/16) by [@caffeinum](https://github.com/caffeinum)
+</Note>
+
+## Examples
+
+### Create project from path
+
+```typescript
+// Check if directory exists first
+const fs = require('fs');
+const projectPath = '/Users/username/projects/my-app';
+
+if (fs.existsSync(projectPath)) {
+  const project = await trpc.projects.create.mutate({
+    path: projectPath
+  });
+  console.log('Project created:', project.id);
+}
+```
+
+### Clone and open GitHub repo
+
+```typescript
+try {
+  const project = await trpc.projects.cloneFromGitHub.mutate({
+    repoUrl: 'https://github.com/vercel/next.js'
+  });
+  
+  console.log('Cloned to:', project.path);
+  console.log('Remote:', project.gitRemoteUrl);
+} catch (error) {
+  console.error('Clone failed:', error.message);
+}
+```
+
+### List projects with git info
+
+```typescript
+const projects = await trpc.projects.list.query();
+
+for (const project of projects) {
+  console.log(`${project.name} (${project.path})`);
+  
+  if (project.gitRemoteUrl) {
+    console.log(`  Git: ${project.gitOwner}/${project.gitRepo}`);
+  }
+}
+```

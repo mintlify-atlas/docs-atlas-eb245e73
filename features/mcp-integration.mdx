@@ -1,0 +1,433 @@
+---
+title: MCP Integration
+description: Model Context Protocol servers and plugin marketplace for extensible AI tools
+---
+
+MCP (Model Context Protocol) allows AI agents to use external tools and services. 1Code provides full MCP server lifecycle management with a built-in plugin marketplace.
+
+## Why It Matters
+
+AI agents have limited built-in capabilities:
+- Can't access databases
+- Can't call external APIs
+- Can't integrate with third-party services
+- Can't use specialized tools
+
+MCP solves this by providing a standard protocol for agents to:
+- Query databases (PostgreSQL, MySQL, MongoDB)
+- Call APIs (GitHub, Linear, Slack, Stripe)
+- Use dev tools (Docker, Kubernetes, AWS CLI)
+- Access specialized services (vector DBs, search engines)
+
+## What is MCP?
+
+MCP is an open protocol that defines how AI agents communicate with external tools.
+
+**Architecture:**
+```
+AI Agent <--> MCP Client <--> MCP Server <--> External Service
+```
+
+**Example MCP Server:**
+A GitHub server exposes tools like:
+- `create_issue` - Create a GitHub issue
+- `list_pull_requests` - List PRs for a repo
+- `merge_pull_request` - Merge a PR
+
+The agent can call these tools just like built-in tools (bash, edit, etc.).
+
+## Installing MCP Servers
+
+### From the Plugin Marketplace
+
+<Steps>
+  <Step title="Open Marketplace">
+    Go to Settings → Plugins → Browse Marketplace
+  </Step>
+  
+  <Step title="Find a Plugin">
+    Search for plugins by name or category (databases, APIs, dev-tools)
+  </Step>
+  
+  <Step title="Install">
+    Click "Install" - 1Code downloads and configures the server automatically
+  </Step>
+  
+  <Step title="Enable">
+    Toggle the server on in Settings → Plugins → Installed
+  </Step>
+</Steps>
+
+Installed servers appear in the MCP Widget in the sidebar.
+
+### Manual Installation
+
+For custom servers not in the marketplace:
+
+**Stdio Servers:**
+```bash
+# 1. Install the server
+npm install -g @my-org/custom-mcp-server
+
+# 2. Add to 1Code
+# Settings → Plugins → Add Server
+# Type: stdio
+# Command: custom-mcp-server
+# Args: --config /path/to/config.json
+```
+
+**HTTP Servers:**
+```bash
+# 1. Start the server
+docker run -p 8080:8080 my-mcp-server
+
+# 2. Add to 1Code
+# Settings → Plugins → Add Server
+# Type: HTTP
+# URL: http://localhost:8080
+```
+
+**Implementation:** The plugins router (`src/main/lib/trpc/routers/plugins.ts:175`) scans installed plugins and discovers their MCP servers.
+
+## MCP Widget
+
+The MCP Widget shows all active servers and their tools.
+
+### Server List
+
+**Each server displays:**
+- Name and icon
+- Number of available tools
+- Status indicator (connected, failed, needs-auth)
+- Expand to see tools
+
+**Example:**
+```
+📊 PostgreSQL (5 tools)
+  - query_database
+  - list_tables
+  - describe_table
+  - create_table
+  - drop_table
+
+🐙 GitHub (12 tools)
+  - create_issue
+  - list_pull_requests
+  - merge_pull_request
+  ...
+```
+
+### Using Tools
+
+Click any tool to insert an @ mention:
+
+```
+@postgres:query_database
+```
+
+The agent will use that tool when executing your prompt.
+
+**Widget Implementation:** The MCP Widget (`src/renderer/features/details-sidebar/sections/mcp-widget.tsx:65`) groups tools by server and formats tool names for readability.
+
+## Configuring MCP Servers
+
+### Server Settings
+
+Each server can have custom configuration:
+
+**Example: PostgreSQL**
+```json
+{
+  "host": "localhost",
+  "port": 5432,
+  "database": "myapp_dev",
+  "user": "postgres"
+}
+```
+
+**Example: GitHub**
+```json
+{
+  "defaultRepo": "my-org/my-repo",
+  "includePrivate": true
+}
+```
+
+Access server settings:
+1. Settings → Plugins → Installed
+2. Click the gear icon next to a server
+3. Edit JSON configuration
+4. Save - server restarts automatically
+
+### Environment Variables
+
+Servers often need secrets (API keys, passwords). Store them as env vars:
+
+```bash
+# .env
+GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+STRIPE_API_KEY=sk_test_xxxxxxxxxxxx
+DATABASE_PASSWORD=xxxxxxxxxxxx
+```
+
+Reference in server config:
+```json
+{
+  "apiKey": "${GITHUB_TOKEN}"
+}
+```
+
+1Code loads `.env` files from:
+- Project root (`.env`)
+- User home (`~/.1code/.env`)
+- System environment
+
+### Authentication
+
+Some servers require OAuth or bearer tokens.
+
+**OAuth Servers:**
+Click "Login" in the server settings to start OAuth flow.
+
+**Example: Linear**
+1. Click "Login" next to Linear server
+2. Browser opens to Linear's OAuth page
+3. Approve permissions
+4. Return to 1Code - server is now authenticated
+
+**Token Servers:**
+Provide a bearer token in settings:
+```json
+{
+  "bearerToken": "${LINEAR_API_KEY}"
+}
+```
+
+## Creating Custom MCP Servers
+
+### Server Types
+
+<Tabs>
+  <Tab title="Stdio">
+    Communicates via stdin/stdout. Best for local tools.
+    
+    ```typescript
+    import { MCPServer } from '@modelcontextprotocol/sdk'
+    
+    const server = new MCPServer({
+      name: 'my-custom-server',
+      version: '1.0.0'
+    })
+    
+    server.addTool({
+      name: 'hello',
+      description: 'Says hello',
+      parameters: {
+        name: { type: 'string' }
+      },
+      execute: async ({ name }) => {
+        return `Hello, ${name}!`
+      }
+    })
+    
+    server.listen()
+    ```
+  </Tab>
+  
+  <Tab title="HTTP">
+    Exposes tools via HTTP endpoints. Best for remote services.
+    
+    ```typescript
+    import express from 'express'
+    import { MCPHttpAdapter } from '@modelcontextprotocol/sdk'
+    
+    const app = express()
+    const mcp = new MCPHttpAdapter({
+      name: 'my-http-server',
+      version: '1.0.0'
+    })
+    
+    mcp.addTool({
+      name: 'search',
+      description: 'Search the database',
+      parameters: {
+        query: { type: 'string' }
+      },
+      execute: async ({ query }) => {
+        // Call your database or API
+        return results
+      }
+    })
+    
+    app.use('/mcp', mcp.router())
+    app.listen(8080)
+    ```
+  </Tab>
+</Tabs>
+
+### Publishing to Marketplace
+
+1. Create a plugin package:
+```json
+{
+  "name": "@my-org/my-plugin",
+  "version": "1.0.0",
+  "1code": {
+    "type": "plugin",
+    "mcp-servers": {
+      "my-server": {
+        "type": "stdio",
+        "command": "my-server",
+        "description": "Does something useful"
+      }
+    }
+  }
+}
+```
+
+2. Publish to npm:
+```bash
+npm publish
+```
+
+3. Submit to marketplace:
+- Go to https://1code.dev/marketplace/submit
+- Enter your package name
+- Fill in description, category, tags
+- Submit for review
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Database Operations" icon="database">
+    Query PostgreSQL, MySQL, MongoDB directly from chat. No manual SQL needed.
+  </Card>
+  
+  <Card title="API Integration" icon="plug">
+    Call GitHub, Linear, Slack APIs. Create issues, send messages, deploy code.
+  </Card>
+  
+  <Card title="Dev Tools" icon="wrench">
+    Run Docker commands, deploy to Kubernetes, manage AWS resources.
+  </Card>
+  
+  <Card title="Custom Workflows" icon="diagram-project">
+    Build company-specific tools. Internal APIs, deployment scripts, etc.
+  </Card>
+</CardGroup>
+
+## Popular MCP Servers
+
+### Official Servers
+
+- **@modelcontextprotocol/server-postgres** - PostgreSQL queries
+- **@modelcontextprotocol/server-github** - GitHub API
+- **@modelcontextprotocol/server-slack** - Slack messaging
+- **@modelcontextprotocol/server-google-drive** - Google Drive access
+
+### Community Servers
+
+- **@mcp/linear** - Linear issue management
+- **@mcp/stripe** - Stripe payment operations
+- **@mcp/docker** - Docker container management
+- **@mcp/aws** - AWS CLI wrapper
+
+Browse all at https://1code.dev/marketplace/plugins
+
+## Codex MCP Support
+
+Codex has enhanced MCP support with additional features:
+
+### Global vs Project Servers
+
+**Global Servers:**
+Available to all chats (configured in `~/.codex/config.toml`).
+
+**Project Servers:**
+Available only to chats in a specific project (configured in `<project>/.codex/config.toml`).
+
+Codex automatically discovers both and merges them.
+
+### MCP CLI
+
+Codex provides a CLI for managing servers:
+
+```bash
+# List servers
+codex mcp list
+
+# Add a server
+codex mcp add my-server -- my-server-command --arg
+
+# Remove a server
+codex mcp remove my-server
+
+# Login to OAuth server
+codex mcp login my-server
+```
+
+1Code uses this CLI internally to manage Codex MCP servers.
+
+## Best Practices
+
+<Card title="Use Scoped Servers" icon="lock">
+  Install database/API servers per-project, not globally. Prevents accidental access to wrong data.
+</Card>
+
+<Card title="Version Pin Dependencies" icon="thumbtack">
+  Pin MCP server versions in package.json to avoid breaking changes.
+</Card>
+
+<Card title="Test Locally First" icon="flask">
+  Before using in chat, test server tools manually with `mcp-cli`.
+</Card>
+
+<Card title="Monitor Tool Usage" icon="chart-line">
+  Check Settings → Debug → MCP Logs to see which tools agents are calling.
+</Card>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Server shows 'needs-auth'">
+    **Cause:** OAuth or bearer token required.
+    
+    **Fix:**
+    - Click "Login" in server settings
+    - Or add `bearerToken` to config
+    - Or set environment variable with token
+  </Accordion>
+  
+  <Accordion title="Server shows 'failed'">
+    **Cause:** Server command not found or crashed on startup.
+    
+    **Fix:**
+    - Check that the server binary is installed (`which <command>`)
+    - View logs in Settings → Debug → MCP Logs
+    - Try running the command manually to see errors
+  </Accordion>
+  
+  <Accordion title="Tools not appearing in MCP Widget">
+    **Cause:** Server hasn't responded yet or no tools registered.
+    
+    **Fix:**
+    - Wait 5-10 seconds for server to initialize
+    - Click "Refresh" in the MCP Widget
+    - Check server logs for errors
+  </Accordion>
+  
+  <Accordion title="Agent not using MCP tools">
+    **Cause:** Tools not mentioned in prompt or agent chose not to use them.
+    
+    **Fix:**
+    - Use @ mentions to hint which tools to use
+    - Be explicit: "Use the GitHub server to create an issue"
+    - Check if the server is enabled in settings
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+- [Multi-Agent Support](/features/multi-agent-support) - Different agents have different MCP support levels
+- [Visual UI](/features/visual-ui) - MCP tool calls are displayed in the chat UI
+- [Background Agents](/features/background-agents) - MCP servers work in cloud sandboxes too

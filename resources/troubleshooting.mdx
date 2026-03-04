@@ -1,0 +1,289 @@
+---
+title: Troubleshooting
+description: Common issues and solutions for 1Code
+---
+
+## Installation Issues
+
+<AccordionGroup>
+  <Accordion title="Error: Could not find module 'better-sqlite3'" icon="database">
+    This error occurs when native modules are not properly rebuilt after installation.
+
+    **Solution:**
+    ```bash
+    # Rebuild native modules
+    bun run postinstall
+    # or manually
+    electron-rebuild -f -w better-sqlite3,node-pty
+    ```
+
+    <Note>
+      On macOS, make sure you have Xcode Command Line Tools installed:
+      ```bash
+      xcode-select --install
+      ```
+    </Note>
+  </Accordion>
+
+  <Accordion title="Python setuptools error during install" icon="python">
+    On Python 3.12+, `setuptools` is not included by default and is required for native module rebuilds.
+
+    **Solution:**
+    ```bash
+    pip install setuptools
+    # Then run install again
+    bun install
+    ```
+
+    <Tip>
+      We recommend using Python 3.11 for best compatibility with native modules.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Missing Claude or Codex binaries" icon="download">
+    If the app builds but agents don't work, you likely skipped downloading the required agent binaries.
+
+    **Solution:**
+    ```bash
+    bun run claude:download
+    bun run codex:download
+    # Then rebuild
+    bun run build
+    ```
+
+    <Warning>
+      These binaries are required for agent functionality. The app will appear to work but agents will fail without them.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Bun not found or version mismatch" icon="package">
+    1Code requires Bun as the package manager and build tool.
+
+    **Solution:**
+    ```bash
+    # Install or update Bun
+    curl -fsSL https://bun.sh/install | bash
+    # Verify installation
+    bun --version
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Build & Packaging Issues
+
+<AccordionGroup>
+  <Accordion title="Electron build fails with code signing error (macOS)" icon="apple">
+    This usually happens when building production packages without proper code signing setup.
+
+    **Solution for development:**
+    Use the dev package command which doesn't require signing:
+    ```bash
+    bun run package  # Creates unpackaged build in release/ dir
+    ```
+
+    **Solution for distribution:**
+    Set up code signing with your Apple Developer certificate. See the [electron-builder docs](https://www.electron.build/code-signing) for details.
+  </Accordion>
+
+  <Accordion title="ASAR packaging errors" icon="box">
+    Native modules (better-sqlite3, node-pty) must be unpacked from ASAR archives.
+
+    **Verify unpacking configuration in package.json:**
+    ```json
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/node-pty/**/*",
+      "node_modules/@anthropic-ai/claude-agent-sdk/**/*",
+      "node_modules/@zed-industries/codex-acp/**/*"
+    ]
+    ```
+
+    If you add new native dependencies, make sure to add them to this list.
+  </Accordion>
+
+  <Accordion title="dist:manifest script fails" icon="file">
+    The manifest generation script requires that the build artifacts exist.
+
+    **Solution:**
+    ```bash
+    # Build first, then generate manifests
+    bun run build
+    bun run package:mac
+    bun run dist:manifest
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Runtime Issues
+
+<AccordionGroup>
+  <Accordion title="Database migration errors on startup" icon="database">
+    Database auto-migration runs on app startup. If it fails, your database may be corrupted.
+
+    **Solution:**
+    ```bash
+    # Backup and reset database
+    # Database location:
+    # macOS: ~/Library/Application Support/1Code/data/agents.db
+    # Linux: ~/.config/1Code/data/agents.db
+    # Windows: %APPDATA%/1Code/data/agents.db
+
+    # Move old database
+    mv "~/Library/Application Support/1Code/data/agents.db" "~/agents.db.backup"
+    # Restart app - it will create a new database
+    ```
+
+    <Warning>
+      This will reset all your projects and chats. Export important conversations first.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="OAuth deep link not working (first install)" icon="link">
+    On macOS, Launch Services may not immediately recognize protocol handlers on first app launch.
+
+    **Solution:**
+    1. Close and reopen the app
+    2. Try clicking "Sign in" again
+    3. If it still doesn't work, re-register protocol handlers:
+    ```bash
+    /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -kill -r -domain local -domain system -domain user
+    ```
+  </Accordion>
+
+  <Accordion title="Git worktree errors" icon="git-alt">
+    Worktree operations can fail if the git repository is in an inconsistent state.
+
+    **Common causes:**
+    - Uncommitted changes in main branch
+    - Existing worktree with the same name
+    - Insufficient disk space
+
+    **Solution:**
+    ```bash
+    # Check worktrees
+    git worktree list
+    # Remove stale worktrees
+    git worktree prune
+    # Check repository status
+    git status
+    ```
+  </Accordion>
+
+  <Accordion title="Agent sessions not resuming" icon="refresh">
+    Session IDs are stored in the database. If the database is corrupted or the session expired, it won't resume.
+
+    **Solution:**
+    - Start a new chat session
+    - Check that the project folder still exists
+    - Verify the worktree hasn't been manually deleted
+  </Accordion>
+
+  <Accordion title="Terminal not working or blank" icon="terminal">
+    node-pty issues can cause terminal problems.
+
+    **Solution:**
+    ```bash
+    # Rebuild node-pty
+    electron-rebuild -f -w node-pty
+    ```
+
+    On Linux, make sure you have the required dependencies:
+    ```bash
+    # Ubuntu/Debian
+    sudo apt-get install -y make python3 build-essential
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Development Mode Issues
+
+<AccordionGroup>
+  <Accordion title="Hot reload not working" icon="fire">
+    electron-vite handles hot reload for renderer and preload processes.
+
+    **Solution:**
+    - Make sure you're using `bun run dev` not `bun run build`
+    - Check the terminal for any compilation errors
+    - Try restarting the dev server
+  </Accordion>
+
+  <Accordion title="Changes not appearing in dev mode" icon="eye">
+    If you modify main process code, you need to restart the entire app.
+
+    **Solution:**
+    - Stop `bun run dev` (Ctrl+C)
+    - Run `bun run dev` again
+    - Renderer process changes hot reload automatically
+  </Accordion>
+
+  <Accordion title="DevTools console errors" icon="bug">
+    Open DevTools with Cmd+Option+I (macOS) or Ctrl+Shift+I (Windows/Linux).
+
+    **Common errors:**
+    - CORS errors: Check that your backend server is running
+    - Import errors: Verify file paths and check for typos
+    - State errors: Check Jotai/Zustand state initialization
+  </Accordion>
+</AccordionGroup>
+
+## Debug Mode
+
+For runtime issues that are hard to reproduce, use the structured debug logging system.
+
+<Steps>
+  <Step title="Start the debug server">
+    ```bash
+    bun packages/debug/src/server.ts &
+    ```
+  </Step>
+
+  <Step title="Instrument your code">
+    Add debug logs in renderer or main process:
+    ```javascript
+    fetch('http://localhost:7799/log', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        tag: 'AGENT_START',
+        msg: 'Starting agent session',
+        data: {sessionId, projectId},
+        ts: Date.now()
+      })
+    }).catch(() => {});
+    ```
+  </Step>
+
+  <Step title="Reproduce the issue">
+    Use the app and trigger the problematic behavior.
+  </Step>
+
+  <Step title="Read logs">
+    ```bash
+    cat .debug/logs.ndjson | jq
+    ```
+    Each line is a JSON object with `tag`, `msg`, `data`, and `ts` fields.
+  </Step>
+</Steps>
+
+<Note>
+  See `packages/debug/INSTRUCTIONS.md` for the full debug protocol.
+</Note>
+
+## Getting Help
+
+If you're still stuck after trying these solutions:
+
+<CardGroup cols={2}>
+  <Card title="Join Discord" icon="discord" href="https://discord.gg/8ektTZGnj4">
+    Get real-time help from the community and core team
+  </Card>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/21st-dev/1code/issues">
+    Report bugs or request features
+  </Card>
+  <Card title="GitHub Discussions" icon="comments" href="https://github.com/21st-dev/1code/discussions">
+    Ask questions and share solutions
+  </Card>
+  <Card title="Support" icon="life-ring" href="/resources/support">
+    Learn about other support options
+  </Card>
+</CardGroup>

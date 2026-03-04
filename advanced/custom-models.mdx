@@ -1,0 +1,266 @@
+---
+title: 'Custom Models & Providers'
+description: 'Bring your own API keys, configure custom providers, and use alternative model endpoints'
+icon: 'sliders'
+---
+
+1Code supports flexible model configuration, allowing you to bring your own API keys (BYOK), use custom API endpoints, and configure alternative providers like Ollama for offline development.
+
+## Overview
+
+1Code supports multiple authentication methods:
+
+- **Claude Subscription** - OAuth with your Anthropic account (Claude Pro/Max)
+- **Custom Models** - Use custom base URLs and API keys for proxies or alternative providers
+- **Ollama** - Local models for offline development
+
+## Using Custom Model Providers
+
+Custom model configuration allows you to:
+- Use API proxies or alternative Anthropic-compatible endpoints
+- Connect to custom deployments with your own API keys
+- Configure different base URLs per project or globally
+
+You can configure custom models from the Settings panel in the app.
+
+### Configuration Options
+
+<ParamField path="model" type="string" required>
+  The model identifier to use (e.g., `claude-3-7-sonnet-20250219`)
+</ParamField>
+
+<ParamField path="token" type="string" required>
+  Your API key or authentication token
+</ParamField>
+
+<ParamField path="baseUrl" type="string" required>
+  The base URL for API requests (e.g., `https://api.anthropic.com`)
+</ParamField>
+
+### Environment Variables
+
+You can also configure custom providers using environment variables in your shell:
+
+```bash ~/.zshrc or ~/.bashrc
+export ANTHROPIC_API_KEY="your-api-key"
+export ANTHROPIC_BASE_URL="https://your-proxy.com"
+```
+
+<Note>
+In development mode, `ANTHROPIC_API_KEY` is stripped from the environment to allow OAuth testing. In production builds, it's preserved to support existing Claude Code CLI configurations.
+</Note>
+
+### How It Works
+
+When you configure a custom model:
+
+1. 1Code validates the configuration by checking model availability
+2. The custom base URL is used for all API requests
+3. Your API key is encrypted using Electron's `safeStorage` and stored locally
+4. Environment variables are passed to the Claude CLI with custom settings
+
+From `/home/daytona/workspace/source/src/main/lib/trpc/routers/claude.ts:1133-1134`:
+
+```typescript
+ANTHROPIC_AUTH_TOKEN: finalCustomConfig.token,
+ANTHROPIC_BASE_URL: finalCustomConfig.baseUrl,
+```
+
+## Multi-Account Management
+
+1Code supports multiple Anthropic accounts with easy switching:
+
+### Adding Accounts
+
+1. Complete OAuth flow for a new account
+2. Accounts are stored with encrypted tokens
+3. Switch between accounts from Settings
+
+### Account Storage
+
+Accounts are stored in the local SQLite database with:
+- Email and display name
+- Encrypted OAuth token (using Electron `safeStorage`)
+- Connection and last-used timestamps
+- Desktop user ID for sync
+
+From `/home/daytona/workspace/source/src/main/lib/trpc/routers/anthropic-accounts.ts:13-19`:
+
+```typescript
+function encryptToken(token: string): string {
+  if (!safeStorage.isEncryptionAvailable()) {
+    console.warn("[AnthropicAccounts] Encryption not available, storing as base64")
+    return Buffer.from(token).toString("base64")
+  }
+  return safeStorage.encryptString(token).toString("base64")
+}
+```
+
+## Ollama for Offline Development
+
+1Code integrates with Ollama for offline model usage:
+
+### Setup
+
+1. Install Ollama from [ollama.ai](https://ollama.ai)
+2. Pull a model: `ollama pull qwen2.5-coder`
+3. Configure Ollama in Settings
+
+### Offline Features
+
+When using Ollama, 1Code provides:
+- **Chat title generation** - Uses local models for naming conversations
+- **Commit message generation** - Generates commit messages without internet
+- **Model selection** - Choose from installed Ollama models
+
+From `/home/daytona/workspace/source/src/main/lib/trpc/routers/ollama.ts:16-44`:
+
+```typescript
+async function generateWithOllama(
+  prompt: string,
+  model?: string | null
+): Promise<string | null> {
+  const ollamaStatus = await checkOllamaStatus()
+  if (!ollamaStatus.available) {
+    return null
+  }
+
+  const modelToUse = model || ollamaStatus.recommendedModel || ollamaStatus.models[0]
+  
+  const response = await fetch("http://localhost:11434/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: modelToUse,
+      prompt,
+      stream: false,
+      options: {
+        temperature: 0.3,
+        num_predict: 50,
+      },
+    }),
+  })
+}
+```
+
+### Default Configuration
+
+Ollama uses these defaults:
+- **Base URL**: `http://localhost:11434`
+- **Recommended models**: `qwen2.5-coder:32b`, `qwen2.5-coder:14b`, `qwen2.5-coder:7b`
+
+## Security Best Practices
+
+<Warning>
+Never commit API keys or tokens to version control. Use environment variables or the built-in secure storage.
+</Warning>
+
+### Secure Token Storage
+
+1Code uses Electron's `safeStorage` API to encrypt sensitive data:
+
+- **Encryption at rest** - Tokens are encrypted before storage
+- **OS-level security** - Uses system keychain on macOS, Windows Credential Store, or libsecret on Linux
+- **Fallback mode** - Base64 encoding if hardware encryption unavailable
+
+### Environment Variable Security
+
+When using environment variables:
+
+1. Add them to your shell profile (`~/.zshrc`, `~/.bashrc`)
+2. Never use `.env` files tracked by git
+3. Use `.env.local` for local development (add to `.gitignore`)
+
+### API Key Rotation
+
+1. Generate new API keys regularly
+2. Revoke old keys from your provider dashboard
+3. Update keys in Settings or environment variables
+
+## Troubleshooting
+
+### Custom Provider Not Working
+
+<AccordionGroup>
+  <Accordion title="Check base URL format">
+    Ensure your base URL:
+    - Starts with `https://` or `http://`
+    - Does not have a trailing slash
+    - Points to the correct API endpoint
+  </Accordion>
+
+  <Accordion title="Verify API key validity">
+    Test your API key with curl:
+    ```bash
+    curl https://your-proxy.com/v1/messages \
+      -H "x-api-key: YOUR_KEY" \
+      -H "anthropic-version: 2023-06-01" \
+      -d '{"model": "claude-3-7-sonnet-20250219", "max_tokens": 10, "messages": [{"role": "user", "content": "Hello"}]}'
+    ```
+  </Accordion>
+
+  <Accordion title="Check network connectivity">
+    If using a proxy, ensure:
+    - Proxy is accessible from your network
+    - Firewall rules allow connections
+    - DNS resolution works for custom domains
+  </Accordion>
+</AccordionGroup>
+
+### Ollama Not Detected
+
+1. Verify Ollama is running: `ollama list`
+2. Check the default port: `curl http://localhost:11434/api/tags`
+3. Restart Ollama service if needed
+
+### Environment Variables Not Loading
+
+1Code reads environment variables from multiple sources in priority order:
+
+1. User-configured settings (highest priority)
+2. Vite env vars (`.env.local` files with `MAIN_VITE_` prefix)
+3. `process.env`
+4. Shell environment (loaded via shell profile)
+
+From `/home/daytona/workspace/source/.env.example:35-38`:
+
+```bash
+# Voice Input (optional - uses OpenAI Whisper API)
+# Set this to enable voice-to-text for users without a paid subscription
+# Get your API key at https://platform.openai.com/api-keys
+# MAIN_VITE_OPENAI_API_KEY=sk-...
+```
+
+## Advanced: Custom Provider Examples
+
+### AWS Bedrock Proxy
+
+```bash
+export ANTHROPIC_BASE_URL="https://bedrock-runtime.us-east-1.amazonaws.com"
+export ANTHROPIC_API_KEY="your-aws-key"
+```
+
+### Azure OpenAI Proxy
+
+```bash
+export ANTHROPIC_BASE_URL="https://your-resource.openai.azure.com"
+export ANTHROPIC_API_KEY="your-azure-key"
+```
+
+### Self-hosted Proxy
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.yourcompany.com/anthropic"
+export ANTHROPIC_API_KEY="your-internal-key"
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/advanced/configuration">
+    Learn about advanced configuration options
+  </Card>
+  <Card title="Voice Input" icon="microphone" href="/advanced/voice-input">
+    Configure voice transcription with custom API keys
+  </Card>
+</CardGroup>

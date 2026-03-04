@@ -1,0 +1,228 @@
+---
+title: Visual UI
+description: Diff previews, real-time tool execution, and git activity badges for complete visibility
+---
+
+The 1Code UI gives you complete visibility into what your AI agents are doing. See diffs before they land, watch tool execution in real-time, and track git operations directly on messages.
+
+## Why It Matters
+
+AI coding agents make dozens of file changes in seconds. Without visibility, you can't:
+- Catch mistakes before they're committed
+- Understand what changed and why
+- Roll back specific changes
+- Learn from the agent's approach
+
+The visual UI solves this by showing you exactly what's happening, as it happens.
+
+## Diff Previews
+
+See exactly what changes the agent is making before they land in your codebase.
+
+### Real-Time Diff View
+
+As the agent edits files, diffs appear instantly in the sidebar:
+- **Unified view:** Traditional diff format with context lines
+- **Split view:** Side-by-side comparison
+- **Syntax highlighting:** Language-aware coloring
+- **Inline comments:** Add notes on specific changes
+
+**Access the diff sidebar:**
+- Click the "Changes" badge on any message
+- Press `Cmd+D` to toggle
+- Click any file in the git activity badge
+
+### File List
+
+The changes sidebar shows all modified files with:
+- File path and icon
+- Lines added (+) and removed (-)
+- Change type (modified, added, deleted)
+- Tree or flat view toggle
+
+**Implementation:** The diff sidebar (`src/renderer/features/changes/components/diff-sidebar-header/diff-sidebar-header.tsx`) uses Monaco editor for syntax highlighting and supports both unified and split view modes.
+
+### Full-Page Diff Mode
+
+For complex changes, press `Shift+Enter` on any file to view the diff in full-page mode (`src/renderer/features/changes/components/diff-full-page-view/diff-full-page-view.tsx:1`). This gives you:
+- Maximum screen space for reviewing changes
+- Keyboard navigation (arrow keys, Escape to close)
+- Same syntax highlighting and view modes
+
+## Git Activity Badges
+
+Every agent message shows git operations that happened during execution.
+
+### Changed Files Badge
+
+Expand to see:
+- List of all edited files
+- Lines added and deleted per file
+- Total change count
+- Click any file to see its diff
+
+**Example:**
+
+```
+Edited 3 files +47 -12
+  ├─ src/index.ts +20 -5
+  ├─ tests/index.test.ts +25 -4
+  └─ package.json +2 -3
+```
+
+### Commit Badge
+
+When the agent creates a commit, you'll see:
+- Commit message
+- Click to view commit details
+- If pushed: links to GitHub commit page
+- If local: opens history tab with commit diff
+
+### Pull Request Badge
+
+When a PR is created:
+- PR title and number
+- Click to open on GitHub
+- Status indicator (open, merged, closed)
+
+**Implementation:** Git activity extraction (`src/renderer/features/agents/ui/git-activity-badges.tsx:12`) parses tool execution results to identify git operations and file changes.
+
+## Real-Time Tool Execution
+
+Watch every tool the agent runs, with inputs and outputs.
+
+### Supported Tools
+
+**File Operations:**
+- `read` - File contents appear in expandable blocks
+- `write` - Shows full file content being written
+- `edit` - Displays old and new strings side-by-side
+
+**Code Operations:**
+- `bash` - Command, output, and exit code
+- `grep` - Search pattern and matching files
+- `glob` - File pattern and matched paths
+
+**AI Operations:**
+- `task` - Sub-agent execution with nested tools
+- `thinking` - Extended reasoning visualization
+- `web_search` - Query and top results
+
+### Tool Execution States
+
+<AccordionGroup>
+  <Accordion title="Running" icon="spinner">
+    Tool is executing. For long-running commands, output streams in real-time.
+  </Accordion>
+  
+  <Accordion title="Success" icon="check">
+    Tool completed successfully. Output is collapsible for readability.
+  </Accordion>
+  
+  <Accordion title="Error" icon="x">
+    Tool failed. Error message is highlighted in red with full stack trace.
+  </Accordion>
+  
+  <Accordion title="Interrupted" icon="pause">
+    User stopped the agent mid-execution. Partial output is preserved.
+  </Accordion>
+</AccordionGroup>
+
+### Tool Output Formatting
+
+**Code blocks** are syntax-highlighted:
+```typescript
+// Example from a bash tool
+const result = await runCommand('npm test')
+```
+
+**Long output** is truncated with "Show more" buttons.
+
+**Structured data** (JSON, YAML) is formatted and collapsible.
+
+## Built-In Git Client
+
+Manage your git workflow without leaving the app.
+
+### Visual Staging
+
+- Stage individual files or hunks
+- Unstage changes
+- Discard modifications
+- Stage all / unstage all buttons
+
+### Commit UI
+
+**Commit input:**
+- Commit message field with syntax highlighting
+- Auto-generated suggestions based on changes
+- Commit & Push option
+- Amend last commit
+
+**Commit history:**
+- Timeline view of all commits
+- Commit message, author, time
+- Click to view commit diff
+- Revert, cherry-pick, reset options
+
+### Branch Management
+
+- Create new branches
+- Switch branches
+- Delete branches (with safety checks)
+- Push to remote
+- Pull latest changes
+
+### PR Creation
+
+Create pull requests directly from the app:
+1. Click "Create PR" in the changes sidebar
+2. Fill in title and description (auto-generated)
+3. Select base branch
+4. Click "Create" - PR opens on GitHub
+
+PR creation uses the `gh` CLI under the hood for seamless GitHub integration.
+
+## File Viewer
+
+Preview any file in your project with `Cmd+P` search.
+
+### Features
+
+- **Fuzzy search:** Type partial paths to find files
+- **Syntax highlighting:** 100+ languages supported
+- **Image viewer:** PNG, JPEG, SVG, GIF
+- **Markdown preview:** Rendered markdown with GitHub-flavored support
+- **Line numbers:** Click to copy permalink
+- **File tree:** Navigate by directory structure
+
+### Keyboard Shortcuts
+
+- `Cmd+P` - Open file search
+- `Cmd+Shift+F` - Find in files
+- `Cmd+W` - Close current file
+- `Cmd+[` / `Cmd+]` - Navigate back/forward
+
+## Best Practices
+
+<Card title="Review Before Committing" icon="eye">
+  Always expand the changed files badge and review diffs before accepting commits.
+</Card>
+
+<Card title="Use Full-Page Mode for Big Changes" icon="expand">
+  When reviewing large refactors, press `Shift+Enter` for maximum screen space.
+</Card>
+
+<Card title="Track Git History" icon="git-branch">
+  Click commit badges to build a mental model of the agent's git workflow.
+</Card>
+
+<Card title="Stage Selectively" icon="check-square">
+  Don't stage everything at once. Review and stage files one at a time.
+</Card>
+
+## Related Features
+
+- [Worktree Isolation](/features/worktree-isolation) - Keep changes isolated per chat
+- [Plan Mode](/features/plan-mode) - See structured plans before execution
+- [Background Agents](/features/background-agents) - Monitor cloud agents visually
